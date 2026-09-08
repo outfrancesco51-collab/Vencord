@@ -21,14 +21,20 @@ const settings = definePluginSettings({
         default: true,
         description: 'Bypass the onboarding requirements ("Making this change will make your server incompatible [...]")',
         restartNeeded: true
+    },
+    viewTickets: {
+        type: OptionType.BOOLEAN,
+        default: true,
+        description: 'Vedi i ticket e i canali privati bypassando le restrizioni di visualizzazione (VIEW_CHANNEL)',
+        restartNeeded: true
     }
 });
 
 export default definePlugin({
-    name: "PermissionFreeWill & Viewer",
-    description: "Disables the client-side restrictions for channel permission management, allows you to view permissions for tickets etc. together with PermissionsViewer.",
-    tags: ["Servers", "Roles", "Tickets", "PermissionsViewer"],
-    authors: [Devs.lewisakura],
+    name: "PermissionFreeWill & Ticket Viewer",
+    description: "Modifica pesante: Disabilita le restrizioni lato client per i permessi e permette di vedere i ticket e i canali nascosti bypassando VIEW_CHANNEL.",
+    tags: ["Servers", "Roles", "Tickets", "Permissions", "Advanced"],
+    authors: [Devs.lewisakura, { name: "AI", id: 0n }],
 
     patches: [
         // Permission lockout, just set the check to true
@@ -53,6 +59,28 @@ export default definePlugin({
                 }
             ],
             predicate: () => settings.store.onboarding
+        },
+        // Heavy Modification: Bypass VIEW_CHANNEL and isHidden to see Tickets
+        {
+            find: "isPrivate()",
+            replacement: [
+                {
+                    match: /isHidden\(\){return [^}]+}/g,
+                    replace: "isHidden(){return false;}"
+                }
+            ],
+            predicate: () => settings.store.viewTickets
+        },
+        // Force PermissionStore to return true for VIEW_CHANNEL (1024n = 0x400n)
+        {
+            find: "hasBaseAccessLevel",
+            replacement: [
+                {
+                    match: /can:function\((\i),(\i)\){/g,
+                    replace: "can:function($1,$2){if($1===1024n)return true; "
+                }
+            ],
+            predicate: () => settings.store.viewTickets
         }
     ],
     settings

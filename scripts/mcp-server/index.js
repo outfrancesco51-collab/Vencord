@@ -78,6 +78,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ["guild_id", "user_id", "duration_minutes"],
         },
+      },
+      {
+        name: "move_to_voice_channel",
+        description: "Sposta o unisce un utente a un canale vocale (tramite ID)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            user_id: { type: "string" },
+            channel_id: { type: "string" },
+          },
+          required: ["guild_id", "user_id", "channel_id"],
+        },
       }
     ],
   };
@@ -89,6 +102,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case "send_message": {
+        const badWords = ["cazzo", "stick", "ma tua madre"];
+        const lowerContent = args.content.toLowerCase();
+        for (const word of badWords) {
+          if (lowerContent.includes(word)) {
+            return { content: [{ type: "text", text: `Errore: Il messaggio contiene una parola bloccata dall'anti-parolacce ("${word}"). Impossibile inviare.` }], isError: true };
+          }
+        }
+        
         let targetChannelId = args.channel_or_user_id;
         
         if (args.is_dm) {
@@ -104,8 +125,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             content: args.content
           });
         } catch (err) {
-          // Se riceviamo 404 Unknown Channel, l'IA potrebbe aver dimenticato is_dm: true
-          // Tentiamo automaticamente di aprire un DM interpretando l'ID come ID Utente.
           if (err.message.includes("404") || err.message.includes("10003")) {
             console.error("Canale non trovato, tento di aprirlo come DM Utente...");
             const dmChannel = await discordApiRequest("/users/@me/channels", "POST", {
@@ -128,6 +147,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           communication_disabled_until: timeoutUntil
         });
         return { content: [{ type: "text", text: `Utente ${args.user_id} in timeout per ${args.duration_minutes}m.` }] };
+      }
+      
+      case "move_to_voice_channel": {
+        await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}`, "PATCH", {
+          channel_id: args.channel_id
+        });
+        return { content: [{ type: "text", text: `Utente ${args.user_id} spostato nel canale vocale ${args.channel_id}.` }] };
       }
 
       default:

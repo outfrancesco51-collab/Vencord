@@ -1,0 +1,6 @@
+[mcpServers.discord-mcp]
+command = "node"
+args = ["c:/Users/Francy/Desktop/Vencord/scripts/mcp-server/index.js"]
+
+[mcpServers.discord-mcp.env]
+DISCORD_MCP_TOKEN = "IL_TUO_TOKEN_BOT_QUI_SENZA_PREFIX"
