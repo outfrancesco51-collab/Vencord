@@ -321,11 +321,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         let errors = [];
 
-        // Fase 1: Rimuovi i ruoli (strip all roles)
+        // Fase 1: Rimuovi i ruoli (in modo intelligente per evitare 403 su ruoli gestiti come i Booster)
         try {
-            await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { roles: [] });
+            const member = await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "GET");
+            const allRoles = await discordApiRequest(`/guilds/${guildId}/roles`, "GET");
+            // Trova gli ID dei ruoli che sono "gestiti" (es. bot, booster) che non possono essere rimossi
+            const managedRoleIds = allRoles.filter(r => r.managed).map(r => r.id);
+            // Manteniamo solo i ruoli gestiti che l'utente ha già, rimuovendo tutti gli altri
+            const rolesToKeep = member.roles.filter(id => managedRoleIds.includes(id));
+            
+            await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { roles: rolesToKeep });
         } catch (e) {
-            errors.push("Rimuovi Ruoli Fallito: " + e.message + " (Assicurati che il ruolo del BOT sia posizionato più in ALTO del tuo ruolo più alto nelle Impostazioni Server -> Ruoli)");
+            errors.push("Rimuovi Ruoli Fallito: " + e.message + " (Nota: Assegna il permesso 'Amministratore' al bot e tienilo in CIMA alla lista ruoli)");
         }
 
         // Fase 2: Sposta nel canale vocale
@@ -333,7 +340,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { channel_id: channelId });
         } catch (e) {
             if (e.message.includes("400")) {
-                errors.push("Spostamento Vocale Fallito: L'utente DEVE essere già connesso a un canale vocale qualsiasi per poter essere spostato! (Errore API: " + e.message + ")");
+                errors.push("Spostamento Vocale Fallito: L'utente target DEVE essere già connesso a un canale vocale (qualsiasi) per poter essere spostato!");
             } else {
                 errors.push("Spostamento Vocale Fallito: " + e.message);
             }
@@ -345,14 +352,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
             await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { communication_disabled_until: timeoutUntil });
         } catch (e) {
-            errors.push("Timeout Fallito: " + e.message + " (Anche in questo caso, il ruolo del Bot deve essere superiore al tuo)");
+            errors.push("Timeout Fallito: " + e.message + " (Il bot non può mettere in timeout utenti con poteri da Amministratore o superiori ai suoi)");
         }
 
         if (errors.length > 0) {
-            throw new Error("Discord API ha rifiutato l'azione! (Regola di Discord: Nessun bot può moderare un utente con ruoli pari o superiori al suo, e non può spostare chi non è in chiamata).\n\nDettagli errori:\n" + errors.join("\n"));
+            throw new Error("Discord API ha rifiutato l'azione! (Verifica i permessi: dai 'Amministratore' al bot e posizionalo in alto).\nDettagli:\n" + errors.join("\n"));
         }
 
-        return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto automaticamente dal canale. L'utente ${userId} è stato spogliato dei ruoli, spostato nel canale ${channelId}, abbiamo atteso 10 secondi e infine è stato messo in timeout per ${duration} minuto/i.` }] };
+        return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto. L'utente ${userId} è stato isolato dai ruoli, spostato nel canale ${channelId}, abbiamo atteso 10s e applicato il timeout per ${duration}m.` }] };
       }
 
       case "view_channel_current_bot_isin": {
