@@ -118,6 +118,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ["guild_id", "user_id"],
         },
+      },
+      {
+        name: "isolate_and_timeout_user",
+        description: "Rimuove tutti i ruoli, sposta in un canale specifico e mette in timeout",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            user_id: { type: "string", description: "Default: 1255608249735184395" },
+            channel_id: { type: "string", description: "Default: 1431795901353169027" },
+            duration_minutes: { type: "number", description: "Default: 1" }
+          },
+          required: ["guild_id"],
+        },
       }
     ],
   };
@@ -206,6 +220,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             delete_message_seconds: args.delete_message_seconds || 0
         });
         return { content: [{ type: "text", text: `Utente ${args.user_id} bannato con successo dal server.` }] };
+      }
+
+      case "isolate_and_timeout_user": {
+        const userId = args.user_id || "1255608249735184395";
+        const channelId = args.channel_id || "1431795901353169027";
+        const duration = args.duration_minutes || 1;
+        const guildId = args.guild_id;
+
+        // Fase 1: Rimuovi i ruoli (strip all roles)
+        await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
+            roles: []
+        });
+
+        // Fase 2: Sposta nel canale vocale
+        await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
+            channel_id: channelId
+        }).catch(e => console.error("L'utente potrebbe non essere in vocale:", e));
+
+        // Fase 3: Timeout
+        const timeoutUntil = new Date(Date.now() + duration * 60000).toISOString();
+        await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
+            communication_disabled_until: timeoutUntil
+        });
+
+        return { content: [{ type: "text", text: `Utente ${userId} processato: rimozione ruoli completata, spostato nel canale ${channelId} e messo in timeout per ${duration} minuto/i.` }] };
       }
 
       default:
