@@ -13,16 +13,25 @@ const server = new Server(
 // Helper for Real Discord API requests
 async function discordApiRequest(endpoint, method, body, reason) {
   let token = process.env.DISCORD_MCP_TOKEN;
-  if (!token || token === "INSERISCI_QUI_IL_TUO_TOKEN" || token === "YOUR_DISCORD_TOKEN_HERE") {
-    throw new Error("Manca il token di Discord! Imposta DISCORD_MCP_TOKEN nel JSON.");
+  // If the user runs directly without modifying, we fallback to reading unsloth_mcp.json directly just in case.
+  if (!token || token.includes("IL_TUO_TOKEN_BOT_QUI")) {
+    try {
+        const unslothConf = require("../../mcp_configs/unsloth_mcp.json");
+        token = unslothConf.mcpServers["discord-mcp"].env.DISCORD_MCP_TOKEN;
+    } catch(e) {}
   }
   
+  if (!token || token.includes("IL_TUO_TOKEN_BOT_QUI")) {
+    throw new Error("Manca il token di Discord VERO! Imposta DISCORD_MCP_TOKEN nel file unsloth_mcp.json. Attualmente hai ancora il placeholder di default, quindi l'API (401 Unauthorized) ti respinge.");
+  }
+  
+  let authString = token;
   if (!token.startsWith("Bot ") && !token.startsWith("Bearer ") && token.length > 50) {
-     // Aggiungiamo 'Bot ' in modo intelligente se fallisce il primo tentativo
+     authString = `Bot ${token}`;
   }
 
   const headers = {
-    "Authorization": token,
+    "Authorization": authString,
     "Content-Type": "application/json",
   };
   if (reason) headers["X-Audit-Log-Reason"] = encodeURIComponent(reason);
@@ -33,18 +42,9 @@ async function discordApiRequest(endpoint, method, body, reason) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401 && !token.startsWith("Bot ")) {
-    headers["Authorization"] = `Bot ${token}`;
-    res = await fetch(`https://discord.com/api/v10${endpoint}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  }
-
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Discord API Error: ${res.status} ${err}`);
+    throw new Error(`Discord API Error: ${res.status} ${err}. (Se ricevi 401 Unauthorized significa che il token in unsloth_mcp.json è sbagliato, invalido o mancante)`);
   }
   
   return res.status === 204 ? null : await res.json();
