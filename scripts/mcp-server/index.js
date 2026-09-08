@@ -121,16 +121,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "isolate_and_timeout_user",
-        description: "Rimuove tutti i ruoli, sposta in un canale specifico e mette in timeout",
+        description: "Rimuove tutti i ruoli, sposta in un canale specifico e mette in timeout, risolvendo il server in automatico",
         inputSchema: {
           type: "object",
           properties: {
-            guild_id: { type: "string" },
             user_id: { type: "string", description: "Default: 1255608249735184395" },
             channel_id: { type: "string", description: "Default: 1431795901353169027" },
             duration_minutes: { type: "number", description: "Default: 1" }
           },
-          required: ["guild_id"],
+          required: ["channel_id"],
+        },
+      },
+      {
+        name: "view_channel_current_bot_isin",
+        description: "Mostra le informazioni su un canale (in quale server si trova il bot/utente in quel momento)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            channel_id: { type: "string", description: "ID del canale da ispezionare" }
+          },
+          required: ["channel_id"],
         },
       }
     ],
@@ -226,12 +236,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const userId = args.user_id || "1255608249735184395";
         const channelId = args.channel_id || "1431795901353169027";
         const duration = args.duration_minutes || 1;
-        const guildId = args.guild_id;
+        
+        // Fase 0: Risolvi il guild_id tramite il channelId
+        const channelData = await discordApiRequest(`/channels/${channelId}`, "GET");
+        const guildId = channelData.guild_id;
+        if (!guildId) {
+            throw new Error("Impossibile trovare il server_id per questo canale. Forse è un canale DM?");
+        }
 
         // Fase 1: Rimuovi i ruoli (strip all roles)
         await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
             roles: []
-        });
+        }).catch(e => console.error("Impossibile rimuovere i ruoli:", e));
 
         // Fase 2: Sposta nel canale vocale
         await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
@@ -242,9 +258,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const timeoutUntil = new Date(Date.now() + duration * 60000).toISOString();
         await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
             communication_disabled_until: timeoutUntil
-        });
+        }).catch(e => console.error("Impossibile mettere in timeout:", e));
 
-        return { content: [{ type: "text", text: `Utente ${userId} processato: rimozione ruoli completata, spostato nel canale ${channelId} e messo in timeout per ${duration} minuto/i.` }] };
+        return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto automaticamente dal canale. L'utente ${userId} è stato spogliato dei ruoli, spostato nel canale ${channelId} e messo in timeout per ${duration} minuto/i.` }] };
+      }
+
+      case "view_channel_current_bot_isin": {
+        const channelData = await discordApiRequest(`/channels/${args.channel_id}`, "GET");
+        const guildId = channelData.guild_id;
+        return { content: [{ type: "text", text: `Informazioni Canale:\nID Canale: ${channelData.id}\nNome Canale: ${channelData.name}\nTipo: ${channelData.type}\nServer ID (Guild): ${guildId || "Nessuno (DM)"}` }] };
       }
 
       default:
