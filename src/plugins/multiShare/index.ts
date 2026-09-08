@@ -1,60 +1,109 @@
-/*
- * Vencord, a Discord client mod
- * Copyright (c) 2023 Vendicated and contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
+import definePlugin from "@utils/types";
+import { Logger } from "@utils/Logger";
 
-import { definePluginSettings } from "@api/Settings";
-import definePlugin, { OptionType } from "@utils/types";
+const logger = new Logger("MultiShare");
+const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
 
-const settings = definePluginSettings({
-    modernInterface: {
-        description: "Usa la nuova interfaccia moderna per selezionare finestre e schermi",
-        type: OptionType.SWITCH,
-        default: true,
-    },
-    advancedAudio: {
-        description: "Abilita Audio Avanzato (Muxing) per le condivisioni multiple",
-        type: OptionType.SWITCH,
-        default: true,
-    },
-    backgroundMusic: {
-        description: "Metti musica di sottofondo quando clicchi 'Condividi'",
-        type: OptionType.SWITCH,
-        default: false,
+let currentStreams: MediaStream[] = [];
+let animationFrameId: number;
+
+async function getCompositedStream(options: DisplayMediaStreamOptions): Promise<MediaStream> {
+    const countStr = prompt("Quante finestre/schermi vuoi condividere simultaneamente?", "2");
+    const count = parseInt(countStr || "1", 10);
+
+    if (isNaN(count) || count <= 1) {
+        return originalGetDisplayMedia(options);
     }
-});
+
+    currentStreams = [];
+    const videos: HTMLVideoElement[] = [];
+
+    for (let i = 0; i < count; i++) {
+        try {
+            const stream = await originalGetDisplayMedia(options);
+            currentStreams.push(stream);
+
+            const video = document.createElement("video");
+            video.srcObject = stream;
+            video.autoplay = true;
+            video.muted = true;
+            await video.play();
+            videos.push(video);
+        } catch (err) {
+            logger.error(`Errore nella cattura dello stream ${i + 1}`, err);
+            break;
+        }
+    }
+
+    if (currentStreams.length === 0) {
+        throw new Error("Nessuno stream catturato");
+    }
+    if (currentStreams.length === 1) {
+        return currentStreams[0];
+    }
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
+    
+    const width = videos[0].videoWidth || 1920;
+    const height = videos[0].videoHeight || 1080;
+    
+    canvas.width = width * currentStreams.length;
+    canvas.height = height;
+
+    const draw = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        videos.forEach((vid, index) => {
+            ctx.drawImage(vid, index * width, 0, width, height);
+        });
+        animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    const compositedStream = canvas.captureStream(60);
+
+    const stopAll = () => {
+        cancelAnimationFrame(animationFrameId);
+        videos.forEach(v => {
+            v.pause();
+            v.srcObject = null;
+        });
+        currentStreams.forEach(s => s.getTracks().forEach(t => t.stop()));
+        compositedStream.getTracks().forEach(t => t.stop());
+    };
+
+    currentStreams.forEach(stream => {
+        stream.getVideoTracks()[0].addEventListener("ended", stopAll);
+    });
+
+    compositedStream.getVideoTracks()[0].addEventListener("ended", stopAll);
+
+    const audioTracks = currentStreams[0].getAudioTracks();
+    if (audioTracks.length > 0) {
+        compositedStream.addTrack(audioTracks[0]);
+    }
+
+    return compositedStream;
+}
 
 export default definePlugin({
-    name: "MultiShareAdvanced",
+    name: "MultiShare",
+    description: "Permette di condividere più schermi contemporaneamente (Avanzato - Canvas Compositing).",
     authors: [{ name: "AI", id: 0n }],
-    description: "Permette di condividere più di una finestra con un'interfaccia moderna e Muxing Audio.",
-    tags: ["Features", "Streaming"],
-    settings,
-    patches: [
-        // Bypass max streams limit
-        {
-            find: "ApplicationStreamingStore",
-            replacement: {
-                match: /canStream:\(\)=>!1/g,
-                replace: "canStream:()=>true /* Bypass Stream Limit per più finestre */"
-            }
-        },
-        // Hook into the RTC Connection to allow Picture-in-Picture dual share
-        {
-            find: "MediaEngineStore",
-            replacement: {
-                match: /getSecondaryStream:\(\)=>{/g,
-                replace: "$& /* Inietta la seconda cattura video in Picture-in-Picture via WebRTC */ "
-            }
-        },
-        // Hook into modern interface for stream selection
-        {
-            find: "StreamSelectionModal",
-            replacement: {
-                match: /renderStreamSelectionModal\(\)/g,
-                replace: "renderModernStreamSelectionModal() /* Interfaccia moderna */"
-            }
+    tags: ["Voice", "Utility"],
+    
+    start() {
+        navigator.mediaDevices.getDisplayMedia = getCompositedStream as any;
+    },
+
+    stop() {
+        navigator.mediaDevices.getDisplayMedia = originalGetDisplayMedia;
+        
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
         }
-    ]
+        currentStreams.forEach(s => s.getTracks().forEach(t => t.stop()));
+        currentStreams = [];
+    }
 });
