@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "discord-mcp-antigravity": {
+      "command": "node",
+      "args": [
+        "c:/Users/Francy/Desktop/Vencord/scripts/mcp-server/index.js",
+        "--mode",
+        "antigravity"
+      ],
+      "env": {
+        "DISCORD_MCP_TOKEN": "YOUR_DISCORD_TOKEN_HERE",
+        "ANTIGRAVITY_API_KEY": "YOUR_ANTIGRAVITY_API_KEY",
+        "ALLOWED_TOOLS": "read_chat,generate_image,generate_code,upload_swisstransfer,manage_channels"
+      }
+    }
+  }
+}
