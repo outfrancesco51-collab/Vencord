@@ -319,22 +319,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             throw new Error("Impossibile trovare il server_id per questo canale. Forse è un canale DM?");
         }
 
+        let errors = [];
+
         // Fase 1: Rimuovi i ruoli (strip all roles)
-        await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
-            roles: []
-        }).catch(e => console.error("Impossibile rimuovere i ruoli:", e));
+        try {
+            await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { roles: [] });
+        } catch (e) {
+            errors.push("Rimuovi Ruoli Fallito: " + e.message);
+        }
 
         // Fase 2: Sposta nel canale vocale
-        await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
-            channel_id: channelId
-        }).catch(e => console.error("L'utente potrebbe non essere in vocale:", e));
+        try {
+            await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { channel_id: channelId });
+        } catch (e) {
+            errors.push("Spostamento Vocale Fallito: " + e.message);
+        }
 
         // Fase 3: Pausa di 10 secondi e poi Timeout
         await new Promise(resolve => setTimeout(resolve, 10000));
         const timeoutUntil = new Date(Date.now() + duration * 60000).toISOString();
-        await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
-            communication_disabled_until: timeoutUntil
-        }).catch(e => console.error("Impossibile mettere in timeout:", e));
+        try {
+            await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { communication_disabled_until: timeoutUntil });
+        } catch (e) {
+            errors.push("Timeout Fallito: " + e.message);
+        }
+
+        if (errors.length > 0) {
+            throw new Error("Discord API ha rifiutato l'azione! Controlla i permessi del bot e assicurati di NON essere l'Owner del Server (i bot non possono moderare gli owner o i ruoli superiori). Dettagli errori:\n" + errors.join("\n"));
+        }
 
         return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto automaticamente dal canale. L'utente ${userId} è stato spogliato dei ruoli, spostato nel canale ${channelId}, abbiamo atteso 10 secondi e infine è stato messo in timeout per ${duration} minuto/i.` }] };
       }
