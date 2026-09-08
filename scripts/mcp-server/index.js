@@ -60,7 +60,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             channel_or_user_id: { type: "string", description: "ID canale o utente" },
             content: { type: "string" },
-            is_dm: { type: "boolean", description: "true se è un utente per aprire i DM" }
+            is_dm: { type: "boolean", description: "true se è un utente per aprire i DM" },
+            guild_id: { type: "string", description: "ID del server (richiesto per auto-timeout su parolacce)" },
+            author_id: { type: "string", description: "ID dell'utente che ha generato il comando (richiesto per auto-timeout)" }
           },
           required: ["channel_or_user_id", "content"],
         },
@@ -91,6 +93,31 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ["guild_id", "user_id", "channel_id"],
         },
+      },
+      {
+        name: "kick_user",
+        description: "Espelle (kick) un utente dal server",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            user_id: { type: "string" },
+          },
+          required: ["guild_id", "user_id"],
+        },
+      },
+      {
+        name: "ban_user",
+        description: "Banna un utente dal server",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            user_id: { type: "string" },
+            delete_message_seconds: { type: "number", description: "Secondi di cronologia messaggi da eliminare (es. 86400 per 1 giorno)" }
+          },
+          required: ["guild_id", "user_id"],
+        },
       }
     ],
   };
@@ -102,12 +129,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case "send_message": {
-        const badWords = ["cazzo", "stick", "ma tua madre"];
+        const badWords = ["cazzo", "stick", "ma tua madre", "negrooo", "kaizune facciamo sesso"];
         const lowerContent = args.content.toLowerCase();
+        let detectedBadWord = null;
         for (const word of badWords) {
           if (lowerContent.includes(word)) {
-            return { content: [{ type: "text", text: `Errore: Il messaggio contiene una parola bloccata dall'anti-parolacce ("${word}"). Impossibile inviare.` }], isError: true };
+            detectedBadWord = word;
+            break;
           }
+        }
+
+        if (detectedBadWord) {
+            if (args.guild_id && args.author_id) {
+                 const timeoutUntil = new Date(Date.now() + 10 * 60000).toISOString();
+                 await discordApiRequest(`/guilds/${args.guild_id}/members/${args.author_id}`, "PATCH", {
+                    communication_disabled_until: timeoutUntil
+                 }).catch(e => console.error("Impossibile mettere in timeout l'utente per parolacce", e));
+                 return { content: [{ type: "text", text: `Errore: Il messaggio contiene una parola bloccata ("${detectedBadWord}"). L'utente è stato messo in timeout per 10 minuti automaticamente.` }], isError: true };
+            }
+            return { content: [{ type: "text", text: `Errore: Il messaggio contiene una parola bloccata ("${detectedBadWord}"). Impossibile inviare.` }], isError: true };
         }
         
         let targetChannelId = args.channel_or_user_id;
@@ -154,6 +194,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           channel_id: args.channel_id
         });
         return { content: [{ type: "text", text: `Utente ${args.user_id} spostato nel canale vocale ${args.channel_id}.` }] };
+      }
+
+      case "kick_user": {
+        await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}`, "DELETE");
+        return { content: [{ type: "text", text: `Utente ${args.user_id} espulso (kick) con successo dal server.` }] };
+      }
+
+      case "ban_user": {
+        await discordApiRequest(`/guilds/${args.guild_id}/bans/${args.user_id}`, "PUT", {
+            delete_message_seconds: args.delete_message_seconds || 0
+        });
+        return { content: [{ type: "text", text: `Utente ${args.user_id} bannato con successo dal server.` }] };
       }
 
       default:

@@ -422,7 +422,7 @@ export default definePlugin({
             replacement: [
                 {
                     match: /(\{value:1080,label:[^}]+?\})/g,
-                    replace: "$1,{value:2160,label:\"4K\"},{value:240,label:\"240p (sfocato)\"}"
+                    replace: "$1,{value:2160,label:\"4K\"},{value:720,label:\"720p\"},{value:480,label:\"480p\"},{value:360,label:\"360p\"},{value:240,label:\"240p (sfocato)\"}"
                 }
             ]
         }

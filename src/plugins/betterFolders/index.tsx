@@ -127,6 +127,16 @@ export const settings = definePluginSettings({
             { label: "When more than one folder is expanded", value: FolderIconDisplay.MoreThanOneFolderExpanded }
         ],
         restartNeeded: true
+    },
+    hideRedDot: {
+        type: OptionType.BOOLEAN,
+        description: "Nascondi i badge rossi e di notifica dai server disattivati nelle cartelle",
+        default: true
+    },
+    superCompactMode: {
+        type: OptionType.BOOLEAN,
+        description: "Modalità Super Compatta: Riduci drasticamente la dimensione delle icone dei server nella barra cartelle per ospitarne di più",
+        default: false
     }
 });
 
