@@ -178,6 +178,45 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   };
 });
 
+async function verifyModeration(guildId, targetUserId) {
+    try {
+        const me = await discordApiRequest("/users/@me", "GET");
+        const botId = me.id;
+        
+        const [botMember, targetMember, allRoles, guild] = await Promise.all([
+            discordApiRequest(`/guilds/${guildId}/members/${botId}`, "GET"),
+            discordApiRequest(`/guilds/${guildId}/members/${targetUserId}`, "GET").catch(() => null), // Può fallire se l'utente non è nel server
+            discordApiRequest(`/guilds/${guildId}/roles`, "GET"),
+            discordApiRequest(`/guilds/${guildId}`, "GET")
+        ]);
+        
+        if (!targetMember) return; // Se l'utente non è nel server (es. ban via ID), non possiamo controllare i ruoli.
+
+        const getHighestRolePos = (memberRoles) => {
+            let highest = 0;
+            for (const rId of memberRoles) {
+                const role = allRoles.find(r => r.id === rId);
+                if (role && role.position > highest) highest = role.position;
+            }
+            return highest;
+        };
+
+        const botPos = getHighestRolePos(botMember.roles);
+        const targetPos = getHighestRolePos(targetMember.roles);
+        
+        if (targetMember.user.id === guild.owner_id) {
+            throw new Error(`CRITICO: L'utente bersaglio è il PROPRIETARIO del server. Discord impedisce fisicamente a chiunque di moderare l'owner.`);
+        }
+
+        if (botPos <= targetPos && targetPos > 0) {
+            throw new Error(`GERARCHIA ERRATA: Il ruolo del bot (Livello ${botPos}) è INFERIORE o UGUALE a quello del bersaglio (Livello ${targetPos}). Discord BLOCCA SEMPRE l'azione. Vai nelle Impostazioni Server -> Ruoli e trascina il ruolo del bot sopra a tutti!`);
+        }
+    } catch (e) {
+        if (e.message.includes("CRITICO") || e.message.includes("GERARCHIA ERRATA")) throw e;
+        // Altrimenti ignora silenziosamente gli errori di diagnostica
+    }
+}
+
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
@@ -244,6 +283,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         if (!guildId) throw new Error("Manca guild_id o channel_id per dedurre il server.");
         
+        await verifyModeration(guildId, args.user_id);
+        
         if (args.send_dm) {
             await discordApiRequest("/users/@me/channels", "POST", { recipient_id: args.user_id })
               .then(dm => discordApiRequest(`/channels/${dm.id}/messages`, "POST", { content: `Sei stato messo in timeout in ${guildId}. Motivo: ${args.reason || "Nessuno"}` }))
@@ -251,9 +292,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         const timeoutUntil = new Date(Date.now() + args.duration_minutes * 60000).toISOString();
-        await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", {
-          communication_disabled_until: timeoutUntil
-        }, args.reason);
+        try {
+            await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { communication_disabled_until: timeoutUntil }, args.reason);
+        } catch (e) {
+            if (e.message.includes("50013")) throw new Error("ERRORE 50013: Manca il permesso. (1) Il server potrebbe avere l'impostazione 'Richiedi 2FA per Moderazione', quindi il TUO account creatore del bot DEVE avere l'autenticazione a due fattori attiva. (2) Altrimenti hai dimenticato di dare 'Timeout Members' al bot.");
+            throw e;
+        }
         return { content: [{ type: "text", text: `Utente ${args.user_id} in timeout per ${args.duration_minutes}m.` }] };
       }
       
@@ -263,9 +307,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const ch = await discordApiRequest(`/channels/${args.channel_id}`, "GET");
             guildId = ch.guild_id;
         }
-        await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", {
-          channel_id: args.channel_id
-        });
+        await verifyModeration(guildId, args.user_id);
+        await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { channel_id: args.channel_id });
         return { content: [{ type: "text", text: `Utente ${args.user_id} spostato nel canale vocale ${args.channel_id}.` }] };
       }
 
@@ -276,6 +319,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             guildId = ch.guild_id;
         }
         if (!guildId) throw new Error("Manca guild_id o channel_id.");
+        
+        await verifyModeration(guildId, args.user_id);
 
         if (args.send_dm) {
             await discordApiRequest("/users/@me/channels", "POST", { recipient_id: args.user_id })
@@ -283,7 +328,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               .catch(e => console.error("Impossibile inviare DM:", e));
         }
 
-        await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "DELETE", null, args.reason);
+        try {
+            await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "DELETE", null, args.reason);
+        } catch (e) {
+            if (e.message.includes("50013")) throw new Error("ERRORE 50013: Manca il permesso Kick. SE GLI HAI GIÀ DATO L'AMMINISTRATORE, il problema è il 2FA. Devi attivare l'Autenticazione a Due Fattori (MFA) sul tuo account Discord personale, altrimenti Discord ti impedisce di usare bot con poteri amministrativi in server protetti!");
+            throw e;
+        }
         return { content: [{ type: "text", text: `Utente ${args.user_id} espulso (kick) con successo dal server.` }] };
       }
 
@@ -294,6 +344,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             guildId = ch.guild_id;
         }
         if (!guildId) throw new Error("Manca guild_id o channel_id.");
+        
+        await verifyModeration(guildId, args.user_id);
 
         if (args.send_dm) {
             await discordApiRequest("/users/@me/channels", "POST", { recipient_id: args.user_id })
@@ -301,9 +353,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               .catch(e => console.error("Impossibile inviare DM:", e));
         }
 
-        await discordApiRequest(`/guilds/${guildId}/bans/${args.user_id}`, "PUT", {
-            delete_message_seconds: args.delete_message_seconds || 0
-        }, args.reason);
+        try {
+            await discordApiRequest(`/guilds/${guildId}/bans/${args.user_id}`, "PUT", { delete_message_seconds: args.delete_message_seconds || 0 }, args.reason);
+        } catch (e) {
+            if (e.message.includes("50013")) throw new Error("ERRORE 50013 FATALE: Hai dato tutti i permessi ma Discord blocca il Ban. Questo significa al 100% che il server ha la 'Moderazione 2FA' attiva. Discord VIETA ai tuoi bot di bannare qualcuno se TU (il proprietario del bot) non hai abilitato l'Autenticazione a Due Fattori sul tuo account utente personale di Discord. Attivala e funzionerà al primo colpo.");
+            throw e;
+        }
         return { content: [{ type: "text", text: `Utente ${args.user_id} bannato con successo dal server.` }] };
       }
 
