@@ -11,7 +11,7 @@ const server = new Server(
 );
 
 // Helper for Real Discord API requests
-async function discordApiRequest(endpoint, method, body) {
+async function discordApiRequest(endpoint, method, body, reason) {
   let token = process.env.DISCORD_MCP_TOKEN;
   if (!token || token === "INSERISCI_QUI_IL_TUO_TOKEN" || token === "YOUR_DISCORD_TOKEN_HERE") {
     throw new Error("Manca il token di Discord! Imposta DISCORD_MCP_TOKEN nel JSON.");
@@ -21,22 +21,23 @@ async function discordApiRequest(endpoint, method, body) {
      // Aggiungiamo 'Bot ' in modo intelligente se fallisce il primo tentativo
   }
 
+  const headers = {
+    "Authorization": token,
+    "Content-Type": "application/json",
+  };
+  if (reason) headers["X-Audit-Log-Reason"] = encodeURIComponent(reason);
+
   let res = await fetch(`https://discord.com/api/v10${endpoint}`, {
     method,
-    headers: {
-      "Authorization": token,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (res.status === 401 && !token.startsWith("Bot ")) {
+    headers["Authorization"] = `Bot ${token}`;
     res = await fetch(`https://discord.com/api/v10${endpoint}`, {
       method,
-      headers: {
-        "Authorization": `Bot ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -206,29 +207,73 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       
       case "timeout_user": {
+        let guildId = args.guild_id;
+        if (!guildId && args.channel_id) {
+            const ch = await discordApiRequest(`/channels/${args.channel_id}`, "GET");
+            guildId = ch.guild_id;
+        }
+        if (!guildId) throw new Error("Manca guild_id o channel_id per dedurre il server.");
+        
+        if (args.send_dm) {
+            await discordApiRequest("/users/@me/channels", "POST", { recipient_id: args.user_id })
+              .then(dm => discordApiRequest(`/channels/${dm.id}/messages`, "POST", { content: `Sei stato messo in timeout in ${guildId}. Motivo: ${args.reason || "Nessuno"}` }))
+              .catch(e => console.error("Impossibile inviare DM:", e));
+        }
+
         const timeoutUntil = new Date(Date.now() + args.duration_minutes * 60000).toISOString();
-        await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}`, "PATCH", {
+        await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", {
           communication_disabled_until: timeoutUntil
-        });
+        }, args.reason);
         return { content: [{ type: "text", text: `Utente ${args.user_id} in timeout per ${args.duration_minutes}m.` }] };
       }
       
       case "move_to_voice_channel": {
-        await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}`, "PATCH", {
+        let guildId = args.guild_id;
+        if (!guildId && args.channel_id) {
+            const ch = await discordApiRequest(`/channels/${args.channel_id}`, "GET");
+            guildId = ch.guild_id;
+        }
+        await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", {
           channel_id: args.channel_id
         });
         return { content: [{ type: "text", text: `Utente ${args.user_id} spostato nel canale vocale ${args.channel_id}.` }] };
       }
 
       case "kick_user": {
-        await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}`, "DELETE");
+        let guildId = args.guild_id;
+        if (!guildId && args.channel_id) {
+            const ch = await discordApiRequest(`/channels/${args.channel_id}`, "GET");
+            guildId = ch.guild_id;
+        }
+        if (!guildId) throw new Error("Manca guild_id o channel_id.");
+
+        if (args.send_dm) {
+            await discordApiRequest("/users/@me/channels", "POST", { recipient_id: args.user_id })
+              .then(dm => discordApiRequest(`/channels/${dm.id}/messages`, "POST", { content: `Sei stato espulso (kick) da ${guildId}. Motivo: ${args.reason || "Nessuno"}` }))
+              .catch(e => console.error("Impossibile inviare DM:", e));
+        }
+
+        await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "DELETE", null, args.reason);
         return { content: [{ type: "text", text: `Utente ${args.user_id} espulso (kick) con successo dal server.` }] };
       }
 
       case "ban_user": {
-        await discordApiRequest(`/guilds/${args.guild_id}/bans/${args.user_id}`, "PUT", {
+        let guildId = args.guild_id;
+        if (!guildId && args.channel_id) {
+            const ch = await discordApiRequest(`/channels/${args.channel_id}`, "GET");
+            guildId = ch.guild_id;
+        }
+        if (!guildId) throw new Error("Manca guild_id o channel_id.");
+
+        if (args.send_dm) {
+            await discordApiRequest("/users/@me/channels", "POST", { recipient_id: args.user_id })
+              .then(dm => discordApiRequest(`/channels/${dm.id}/messages`, "POST", { content: `Sei stato bannato da ${guildId}. Motivo: ${args.reason || "Nessuno"}` }))
+              .catch(e => console.error("Impossibile inviare DM:", e));
+        }
+
+        await discordApiRequest(`/guilds/${guildId}/bans/${args.user_id}`, "PUT", {
             delete_message_seconds: args.delete_message_seconds || 0
-        });
+        }, args.reason);
         return { content: [{ type: "text", text: `Utente ${args.user_id} bannato con successo dal server.` }] };
       }
 
