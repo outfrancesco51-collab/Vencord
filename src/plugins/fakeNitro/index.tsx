@@ -416,19 +416,22 @@ export default definePlugin({
                 replace: "true"
             }
         },
-        // Add custom resolutions
+        // Add custom resolutions to stream quality picker
         {
-            find: "RESOLUTION_1080",
-            replacement: {
-                match: /(RESOLUTION_1080:\d+,)/g,
-                replace: "$1RESOLUTION_4K:2160,RESOLUTION_240:240,"
-            }
+            find: "value:1440",
+            replacement: [
+                {
+                    match: /(\{value:1440,label:.*?\}|{value:1440,label:"1440p"})/g,
+                    replace: "$1,{value:2160,label:\"4K\"},{value:240,label:\"240p (sfocato)\"}"
+                }
+            ]
         },
+        // We also need to patch the stream resolution constants if they exist
         {
-            find: "value:1080",
+            find: "RESOLUTION_1440",
             replacement: {
-                match: /(\{value:1080,label:"1080p"\})/g,
-                replace: "$1,{value:2160,label:\"4K\"},{value:240,label:\"240p (sfocato)\"}"
+                match: /(RESOLUTION_1440:\d+,)/g,
+                replace: "$1RESOLUTION_4K:2160,RESOLUTION_240:240,"
             }
         }
     ],
