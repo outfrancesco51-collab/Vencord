@@ -254,13 +254,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             channel_id: channelId
         }).catch(e => console.error("L'utente potrebbe non essere in vocale:", e));
 
-        // Fase 3: Timeout
+        // Fase 3: Pausa di 10 secondi e poi Timeout
+        await new Promise(resolve => setTimeout(resolve, 10000));
         const timeoutUntil = new Date(Date.now() + duration * 60000).toISOString();
         await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", {
             communication_disabled_until: timeoutUntil
         }).catch(e => console.error("Impossibile mettere in timeout:", e));
 
-        return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto automaticamente dal canale. L'utente ${userId} è stato spogliato dei ruoli, spostato nel canale ${channelId} e messo in timeout per ${duration} minuto/i.` }] };
+        return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto automaticamente dal canale. L'utente ${userId} è stato spogliato dei ruoli, spostato nel canale ${channelId}, abbiamo atteso 10 secondi e infine è stato messo in timeout per ${duration} minuto/i.` }] };
       }
 
       case "view_channel_current_bot_isin": {
