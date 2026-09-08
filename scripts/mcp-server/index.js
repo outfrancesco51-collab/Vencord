@@ -319,6 +319,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             throw new Error("Impossibile trovare il server_id per questo canale. Forse è un canale DM?");
         }
 
+        // --- DIAGNOSTICA AVANZATA GERARCHIA RUOLI ---
+        try {
+            const me = await discordApiRequest("/users/@me", "GET");
+            const botId = me.id;
+            
+            const [botMember, targetMember, allRoles] = await Promise.all([
+                discordApiRequest(`/guilds/${guildId}/members/${botId}`, "GET"),
+                discordApiRequest(`/guilds/${guildId}/members/${userId}`, "GET"),
+                discordApiRequest(`/guilds/${guildId}/roles`, "GET")
+            ]);
+            
+            const getHighestRolePos = (memberRoles) => {
+                let highest = 0;
+                for (const rId of memberRoles) {
+                    const role = allRoles.find(r => r.id === rId);
+                    if (role && role.position > highest) highest = role.position;
+                }
+                return highest;
+            };
+
+            const botPos = getHighestRolePos(botMember.roles);
+            const targetPos = getHighestRolePos(targetMember.roles);
+            
+            const isTargetOwner = targetMember.user.id === (await discordApiRequest(`/guilds/${guildId}`, "GET")).owner_id;
+
+            if (isTargetOwner) {
+                return { content: [{ type: "text", text: `ERRORE CRITICO PREVENUTO: L'utente che stai cercando di colpire (${userId}) è l'OWNER (Proprietario) del server! Nessun bot o amministratore può moderare il proprietario. Azione annullata.` }], isError: true };
+            }
+
+            if (botPos <= targetPos && targetPos > 0) {
+                return { content: [{ type: "text", text: `ERRORE GERARCHIA PREVENUTO: Il bot ha un livello di potere massimo pari a [${botPos}], mentre il bersaglio ha un livello pari a [${targetPos}]. Discord blocca qualsiasi azione se il bot non è STRETTAMENTE SUPERIORE al bersaglio. Vai nelle Impostazioni Server -> Ruoli e trascina il ruolo del bot sopra a tutti gli altri!` }], isError: true };
+            }
+        } catch (diagErr) {
+            console.error("Diagnostica gerarchia fallita (probabile mancanza permessi base):", diagErr.message);
+        }
+        // --- FINE DIAGNOSTICA ---
+
         let errors = [];
 
         // Fase 1: Rimuovi i ruoli (in modo intelligente per evitare 403 su ruoli gestiti come i Booster)
