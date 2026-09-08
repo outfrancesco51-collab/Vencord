@@ -1,13 +1,13 @@
 const { Server } = require("@modelcontextprotocol/sdk/server/index.js");
 const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
-const { CallToolRequestSchema, ListToolsRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
+const { CallToolRequestSchema, ListToolsRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema } = require("@modelcontextprotocol/sdk/types.js");
 
 const server = new Server(
   {
     name: "discord-mcp-advanced",
     version: "2.0.0",
   },
-  { capabilities: { tools: {} } }
+  { capabilities: { tools: {}, prompts: {} } }
 );
 
 // Helper for Real Discord API requests
@@ -49,6 +49,36 @@ async function discordApiRequest(endpoint, method, body, reason) {
   
   return res.status === 204 ? null : await res.json();
 }
+
+server.setRequestHandler(ListPromptsRequestSchema, async () => {
+  return {
+    prompts: [
+      {
+        name: "moderazione_automatica",
+        description: "Prompt per eseguire la catena di moderazione automatica",
+        arguments: []
+      }
+    ]
+  };
+});
+
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  if (request.params.name === "moderazione_automatica") {
+    return {
+      description: "Prompt per eseguire la moderazione",
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: "Usa il tool view_channel_current_bot_isin con channel_id 1431795901353169027 per controllare dove ti trovi. Dopo aver confermato, usa isolate_and_timeout_user inserendo SOLO l'ID del canale (e l'ID utente 1255608249735184395). Farà tutto lui in automatico: ti toglierà i ruoli, ti sposterà ed emetterà il timeout!"
+          }
+        }
+      ]
+    };
+  }
+  throw new Error("Prompt not found");
+});
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
