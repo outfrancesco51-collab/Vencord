@@ -319,19 +319,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             throw new Error("Impossibile trovare il server_id per questo canale. Forse è un canale DM?");
         }
 
-        // Controllo se l'utente è l'Owner del server!
-        const guildData = await discordApiRequest(`/guilds/${guildId}`, "GET");
-        if (guildData.owner_id === userId) {
-            throw new Error(`\n🚨 AZIONE BLOCCATA DA DISCORD 🚨\nL'utente ${userId} è il PROPRIETARIO (Owner) assoluto del server '${guildData.name}'!\nNessun bot al mondo ha i permessi per togliere i ruoli, spostare o mettere in timeout il proprietario del server. È un blocco nativo di Discord che non può essere hackerato o aggirato.\nPer favore, testa questo comando su un account diverso (un amico o un tuo secondo account senza poteri).`);
-        }
-
         let errors = [];
 
         // Fase 1: Rimuovi i ruoli (strip all roles)
         try {
             await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { roles: [] });
         } catch (e) {
-            errors.push("Rimuovi Ruoli Fallito (Il bot ha un ruolo inferiore all'utente?): " + e.message);
+            errors.push("Rimuovi Ruoli Fallito: " + e.message + " (Assicurati che il ruolo del BOT sia posizionato più in ALTO del tuo ruolo più alto nelle Impostazioni Server -> Ruoli)");
         }
 
         // Fase 2: Sposta nel canale vocale
@@ -339,7 +333,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { channel_id: channelId });
         } catch (e) {
             if (e.message.includes("400")) {
-                errors.push("Spostamento Vocale Fallito: L'utente DEVE ESSERE GIA' CONNESSO a una chat vocale qualsiasi per poter essere trascinato in un'altra. Altrimenti Discord restituisce errore.");
+                errors.push("Spostamento Vocale Fallito: L'utente DEVE essere già connesso a un canale vocale qualsiasi per poter essere spostato! (Errore API: " + e.message + ")");
             } else {
                 errors.push("Spostamento Vocale Fallito: " + e.message);
             }
@@ -351,11 +345,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
             await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { communication_disabled_until: timeoutUntil });
         } catch (e) {
-            errors.push("Timeout Fallito: " + e.message);
+            errors.push("Timeout Fallito: " + e.message + " (Anche in questo caso, il ruolo del Bot deve essere superiore al tuo)");
         }
 
         if (errors.length > 0) {
-            throw new Error("Discord API ha rifiutato l'azione! Dettagli errori:\n" + errors.join("\n"));
+            throw new Error("Discord API ha rifiutato l'azione! (Regola di Discord: Nessun bot può moderare un utente con ruoli pari o superiori al suo, e non può spostare chi non è in chiamata).\n\nDettagli errori:\n" + errors.join("\n"));
         }
 
         return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto automaticamente dal canale. L'utente ${userId} è stato spogliato dei ruoli, spostato nel canale ${channelId}, abbiamo atteso 10 secondi e infine è stato messo in timeout per ${duration} minuto/i.` }] };
