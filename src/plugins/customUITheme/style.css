@@ -1,0 +1,13 @@
+/* Windows XP/Vista custom mock CSS */
+.theme-dark {
+    --background-primary: #ECE9D8 !important; /* XP silver/blue tint */
+    --background-secondary: #003399 !important; /* XP Blue title bar vibe */
+    --text-normal: #000000 !important;
+}
+
+.theme-light {
+    --background-primary: #ECE9D8 !important;
+    --background-secondary: #003399 !important;
+}
+
+/* Add more extensive overrides here for full Windows XP / Vista look */

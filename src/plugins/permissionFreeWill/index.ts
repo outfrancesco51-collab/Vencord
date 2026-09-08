@@ -25,9 +25,9 @@ const settings = definePluginSettings({
 });
 
 export default definePlugin({
-    name: "PermissionFreeWill",
-    description: "Disables the client-side restrictions for channel permission management.",
-    tags: ["Servers", "Roles"],
+    name: "PermissionFreeWill & Viewer",
+    description: "Disables the client-side restrictions for channel permission management, allows you to view permissions for tickets etc. together with PermissionsViewer.",
+    tags: ["Servers", "Roles", "Tickets", "PermissionsViewer"],
     authors: [Devs.lewisakura],
 
     patches: [

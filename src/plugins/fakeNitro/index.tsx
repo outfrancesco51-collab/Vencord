@@ -415,6 +415,21 @@ export default definePlugin({
                 match: /(?<=type:"(?:SOUNDBOARD_SOUNDS_RECEIVED|GUILD_SOUNDBOARD_SOUND_CREATE|GUILD_SOUNDBOARD_SOUND_UPDATE|GUILD_SOUNDBOARD_SOUNDS_UPDATE)".+?available:)\i\.available/g,
                 replace: "true"
             }
+        },
+        // Add custom resolutions
+        {
+            find: "RESOLUTION_1080",
+            replacement: {
+                match: /(RESOLUTION_1080:\d+,)/g,
+                replace: "$1RESOLUTION_4K:2160,RESOLUTION_240:240,"
+            }
+        },
+        {
+            find: "value:1080",
+            replacement: {
+                match: /(\{value:1080,label:"1080p"\})/g,
+                replace: "$1,{value:2160,label:\"4K\"},{value:240,label:\"240p (sfocato)\"}"
+            }
         }
     ],
 
