@@ -173,6 +173,34 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ["channel_id"],
         },
+      },
+      {
+        name: "search_image",
+        description: "Cerca un'immagine su internet e restituisce un link Markdown pronto da inviare in chat",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "Es: Luigi's Mansion 3" }
+          },
+          required: ["query"],
+        },
+      },
+      {
+        name: "automatize_channel",
+        description: "Automatizza un canale: crea ruoli tematici, crea un webhook e genera uno script Python per lo scraping news via Webhook",
+        inputSchema: {
+          type: "object",
+          properties: {
+            channel_id: { type: "string" },
+            topic: { type: "string", description: "L'argomento del canale, es: Luigi's Mansion News" },
+            theme_roles: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "Array di nomi di ruoli tematici da creare nel server"
+            }
+          },
+          required: ["channel_id", "topic", "theme_roles"],
+        },
       }
     ],
   };
@@ -452,6 +480,78 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto. L'utente ${userId} è stato isolato dai ruoli, spostato nel canale ${channelId}, abbiamo atteso 10s e applicato il timeout per ${duration}m.` }] };
+      }
+      
+      case "search_image": {
+        const query = args.query;
+        let imageUrl = null;
+        try {
+            // Usa Wikimedia API per trovare l'immagine del miglior articolo corrispondente
+            const url = `https://it.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&prop=pageimages&pithumbsize=1000&format=json`;
+            const req = await fetch(url);
+            const data = await req.json();
+            if (data && data.query && data.query.pages) {
+                const pages = Object.values(data.query.pages);
+                if (pages.length > 0 && pages[0].thumbnail) {
+                    imageUrl = pages[0].thumbnail.source;
+                }
+            }
+        } catch (e) {
+            console.error("Image search error:", e);
+        }
+
+        if (imageUrl) {
+            return { content: [{ type: "text", text: `Ecco l'immagine trovata (formato Markdown): ![${query}](${imageUrl})` }] };
+        } else {
+            return { content: [{ type: "text", text: `Nessuna immagine trovata per "${query}". Prova con termini più semplici.` }] };
+        }
+      }
+
+      case "automatize_channel": {
+        const channelId = args.channel_id;
+        const topic = args.topic || "Generico";
+        const themeRoles = args.theme_roles || [];
+        
+        const channelData = await discordApiRequest(`/channels/${channelId}`, "GET");
+        const guildId = channelData.guild_id;
+        if (!guildId) throw new Error("Server non trovato per questo canale.");
+
+        // Crea Ruoli
+        let createdRoles = [];
+        for (const roleName of themeRoles) {
+            try {
+                const newRole = await discordApiRequest(`/guilds/${guildId}/roles`, "POST", { name: roleName, color: Math.floor(Math.random() * 16777215) });
+                createdRoles.push(newRole.name);
+            } catch (e) {
+                console.error("Impossibile creare ruolo", roleName, e);
+            }
+        }
+
+        // Crea Webhook
+        let webhookUrl = "";
+        try {
+            const webhook = await discordApiRequest(`/channels/${channelId}/webhooks`, "POST", { name: `${topic} Scraper` });
+            webhookUrl = `https://discord.com/api/v10/webhooks/${webhook.id}/${webhook.token}`;
+        } catch (e) {
+            throw new Error(`Impossibile creare webhook: ${e.message}`);
+        }
+
+        // Crea file Python (Scraper)
+        const fs = require('fs');
+        const path = require('path');
+        const scriptName = `scraper_${topic.replace(/\s+/g, "_").toLowerCase()}.py`;
+        const scriptPath = path.join(__dirname, scriptName);
+        
+        const pythonCode = `import requests\nfrom bs4 import BeautifulSoup\nimport time\n\nWEBHOOK_URL = "${webhookUrl}"\nTOPIC = "${topic}"\n\ndef scrape_and_send():\n    try:\n        # Esempio di scraping da un sito di news generico (es. IGN/Google News)\n        # Personalizza l'URL in base al TOPIC!\n        url = 'https://news.google.com/search?q=' + TOPIC.replace(' ', '%20')\n        html = requests.get(url).text\n        soup = BeautifulSoup(html, 'html.parser')\n        \n        # Estrazione (Esempio basico)\n        articles = soup.find_all('article')\n        if articles:\n            title = articles[0].text\n            message = {"content": f"📰 **Nuova News su {TOPIC}:**\\n{title}"}\n            requests.post(WEBHOOK_URL, json=message)\n            print("News inviata con successo!")\n        else:\n            print("Nessuna news trovata.")\n    except Exception as e:\n        print(f"Errore nello scraping: {e}")\n\nif __name__ == "__main__":\n    scrape_and_send()\n`;
+        
+        fs.writeFileSync(scriptPath, pythonCode);
+
+        return { 
+            content: [{ 
+                type: "text", 
+                text: `✅ Canale Automattizzato con Successo!\n\n1. Ruoli creati: ${createdRoles.join(", ")}\n2. Webhook creato e pronto.\n3. Script Python autogenerato salvato in: ${scriptPath}\n\nLo script è pronto per essere eseguito per cercare news su "${topic}" e inviarle automaticamente sul canale Discord usando BeautifulSoup e Requests!` 
+            }] 
+        };
       }
 
       case "view_channel_current_bot_isin": {
