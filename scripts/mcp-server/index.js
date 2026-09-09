@@ -187,19 +187,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "automatize_channel",
-        description: "Automatizza un canale: crea ruoli tematici, crea un webhook e genera uno script Python per lo scraping news via Webhook",
+        description: "Strumento IA Avanzato per analizzare e automatizzare un Server/Canale. AZIONI: usa 'analyze' per LEGGERE i canali/ruoli attuali del server; usa 'execute' per CREARE in automatico nuove sezioni, canali, ruoli, webhook e script di scraping basandosi su ciò che l'IA ha deciso.",
         inputSchema: {
           type: "object",
           properties: {
-            channel_id: { type: "string" },
-            topic: { type: "string", description: "L'argomento del canale, es: Luigi's Mansion News" },
-            theme_roles: { 
-              type: "array", 
-              items: { type: "string" },
-              description: "Array di nomi di ruoli tematici da creare nel server"
-            }
+            target_id: { type: "string", description: "ID del Server (Guild) o del Canale. Se l'utente ti dà un ID, mettilo qui." },
+            action: { type: "string", enum: ["analyze", "execute"], description: "Passo 1: 'analyze' (restituisce canali/ruoli attuali). Passo 2: 'execute' (crea le modifiche)" },
+            topic: { type: "string", description: "Es: Luigi's Mansion News (richiesto solo per execute)" },
+            new_categories: { type: "array", items: { type: "string" }, description: "Nomi delle nuove Categorie/Sezioni da creare (solo per execute)" },
+            new_channels: { type: "array", items: { type: "string" }, description: "Nomi dei nuovi Canali testuali da creare (solo per execute)" },
+            new_roles: { type: "array", items: { type: "string" }, description: "Nomi dei nuovi Ruoli da creare (solo per execute)" }
           },
-          required: ["channel_id", "topic", "theme_roles"],
+          required: ["target_id", "action"],
         },
       }
     ],
@@ -508,50 +507,116 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "automatize_channel": {
-        const channelId = args.channel_id;
-        const topic = args.topic || "Generico";
-        const themeRoles = args.theme_roles || [];
+        const targetId = args.target_id;
+        const action = args.action;
         
-        const channelData = await discordApiRequest(`/channels/${channelId}`, "GET");
-        const guildId = channelData.guild_id;
-        if (!guildId) throw new Error("Server non trovato per questo canale.");
+        // Fase 1: Identifica se target_id è una Guild o un Channel
+        let guildId = targetId;
+        let isGuild = false;
+        try {
+            const guildCheck = await discordApiRequest(`/guilds/${targetId}`, "GET");
+            if (guildCheck.id) isGuild = true;
+        } catch (e) {}
 
-        // Crea Ruoli
-        let createdRoles = [];
-        for (const roleName of themeRoles) {
+        let baseChannelId = null;
+        if (!isGuild) {
             try {
-                const newRole = await discordApiRequest(`/guilds/${guildId}/roles`, "POST", { name: roleName, color: Math.floor(Math.random() * 16777215) });
-                createdRoles.push(newRole.name);
+                const channelData = await discordApiRequest(`/channels/${targetId}`, "GET");
+                guildId = channelData.guild_id;
+                baseChannelId = targetId;
+                if (!guildId) throw new Error("Il canale non appartiene a un server.");
             } catch (e) {
-                console.error("Impossibile creare ruolo", roleName, e);
+                throw new Error("ID non valido: non è né un server né un canale esistente. (404 Unknown)");
             }
         }
 
-        // Crea Webhook
-        let webhookUrl = "";
-        try {
-            const webhook = await discordApiRequest(`/channels/${channelId}/webhooks`, "POST", { name: `${topic} Scraper` });
-            webhookUrl = `https://discord.com/api/v10/webhooks/${webhook.id}/${webhook.token}`;
-        } catch (e) {
-            throw new Error(`Impossibile creare webhook: ${e.message}`);
+        // AZIONE: ANALYZE
+        if (action === "analyze") {
+            const channels = await discordApiRequest(`/guilds/${guildId}/channels`, "GET");
+            const roles = await discordApiRequest(`/guilds/${guildId}/roles`, "GET");
+            
+            const textChannels = channels.filter(c => c.type === 0).map(c => `- ${c.name} (ID: ${c.id})`).join("\n");
+            const categories = channels.filter(c => c.type === 4).map(c => `- ${c.name}`).join("\n");
+            const rolesList = roles.map(r => `- ${r.name}`).join("\n");
+            
+            return {
+                content: [{
+                    type: "text",
+                    text: `🔍 **ANALISI SERVER COMPLETATA** (ID: ${guildId})\n\n**Categorie Attuali:**\n${categories || "Nessuna"}\n\n**Canali Testuali:**\n${textChannels || "Nessuno"}\n\n**Ruoli Attuali:**\n${rolesList || "Nessuno"}\n\n➡️ **Passo successivo per l'IA**: Ora che hai letto la struttura, richiama il tool 'automatize_channel' con action="execute" fornendo new_categories, new_channels, new_roles e un topic per automatizzarlo!`
+                }]
+            };
         }
 
-        // Crea file Python (Scraper)
-        const fs = require('fs');
-        const path = require('path');
-        const scriptName = `scraper_${topic.replace(/\s+/g, "_").toLowerCase()}.py`;
-        const scriptPath = path.join(__dirname, scriptName);
-        
-        const pythonCode = `import requests\nfrom bs4 import BeautifulSoup\nimport time\n\nWEBHOOK_URL = "${webhookUrl}"\nTOPIC = "${topic}"\n\ndef scrape_and_send():\n    try:\n        # Esempio di scraping da un sito di news generico (es. IGN/Google News)\n        # Personalizza l'URL in base al TOPIC!\n        url = 'https://news.google.com/search?q=' + TOPIC.replace(' ', '%20')\n        html = requests.get(url).text\n        soup = BeautifulSoup(html, 'html.parser')\n        \n        # Estrazione (Esempio basico)\n        articles = soup.find_all('article')\n        if articles:\n            title = articles[0].text\n            message = {"content": f"📰 **Nuova News su {TOPIC}:**\\n{title}"}\n            requests.post(WEBHOOK_URL, json=message)\n            print("News inviata con successo!")\n        else:\n            print("Nessuna news trovata.")\n    except Exception as e:\n        print(f"Errore nello scraping: {e}")\n\nif __name__ == "__main__":\n    scrape_and_send()\n`;
-        
-        fs.writeFileSync(scriptPath, pythonCode);
+        // AZIONE: EXECUTE
+        if (action === "execute") {
+            const topic = args.topic || "Generico";
+            let createdRoles = [];
+            let createdChannels = [];
+            let targetWebhookChannelId = baseChannelId;
 
-        return { 
-            content: [{ 
-                type: "text", 
-                text: `✅ Canale Automattizzato con Successo!\n\n1. Ruoli creati: ${createdRoles.join(", ")}\n2. Webhook creato e pronto.\n3. Script Python autogenerato salvato in: ${scriptPath}\n\nLo script è pronto per essere eseguito per cercare news su "${topic}" e inviarle automaticamente sul canale Discord usando BeautifulSoup e Requests!` 
-            }] 
-        };
+            // 1. Crea Ruoli
+            if (args.new_roles && args.new_roles.length > 0) {
+                for (const roleName of args.new_roles) {
+                    try {
+                        const newRole = await discordApiRequest(`/guilds/${guildId}/roles`, "POST", { name: roleName, color: Math.floor(Math.random() * 16777215) });
+                        createdRoles.push(newRole.name);
+                    } catch (e) { console.error("Errore ruolo:", e); }
+                }
+            }
+
+            // 2. Crea Categorie e Canali
+            let parentId = null;
+            if (args.new_categories && args.new_categories.length > 0) {
+                try {
+                    const category = await discordApiRequest(`/guilds/${guildId}/channels`, "POST", { name: args.new_categories[0], type: 4 });
+                    parentId = category.id;
+                } catch (e) { console.error("Errore categoria:", e); }
+            }
+
+            if (args.new_channels && args.new_channels.length > 0) {
+                for (const chName of args.new_channels) {
+                    try {
+                        const newCh = await discordApiRequest(`/guilds/${guildId}/channels`, "POST", { name: chName, type: 0, parent_id: parentId });
+                        createdChannels.push(newCh.name);
+                        targetWebhookChannelId = newCh.id; // Usa l'ultimo canale creato come target del webhook
+                    } catch (e) { console.error("Errore canale:", e); }
+                }
+            }
+
+            if (!targetWebhookChannelId) {
+                // Se non c'è un baseChannelId e non ne ha creati, prende il primo testuale a caso
+                const allCh = await discordApiRequest(`/guilds/${guildId}/channels`, "GET");
+                const firstText = allCh.find(c => c.type === 0);
+                if (firstText) targetWebhookChannelId = firstText.id;
+                else throw new Error("Nessun canale in cui creare il Webhook!");
+            }
+
+            // 3. Crea Webhook
+            let webhookUrl = "";
+            try {
+                const webhook = await discordApiRequest(`/channels/${targetWebhookChannelId}/webhooks`, "POST", { name: `${topic} Scraper` });
+                webhookUrl = `https://discord.com/api/v10/webhooks/${webhook.id}/${webhook.token}`;
+            } catch (e) {
+                console.error(`Impossibile creare webhook: ${e.message}`);
+            }
+
+            // 4. Crea file Python (Scraper)
+            const fs = require('fs');
+            const path = require('path');
+            const scriptName = `scraper_${topic.replace(/\s+/g, "_").toLowerCase()}.py`;
+            const scriptPath = path.join(__dirname, scriptName);
+            
+            const pythonCode = `import requests\nfrom bs4 import BeautifulSoup\nimport time\n\nWEBHOOK_URL = "${webhookUrl}"\nTOPIC = "${topic}"\n\ndef scrape_and_send():\n    try:\n        url = 'https://news.google.com/search?q=' + TOPIC.replace(' ', '%20')\n        html = requests.get(url).text\n        soup = BeautifulSoup(html, 'html.parser')\n        articles = soup.find_all('article')\n        if articles:\n            title = articles[0].text\n            message = {"content": f"📰 **Automazione {TOPIC}:**\\n{title}"}\n            requests.post(WEBHOOK_URL, json=message)\n            print("News inviata con successo!")\n    except Exception as e:\n        print(f"Errore nello scraping: {e}")\n\nif __name__ == "__main__":\n    scrape_and_send()\n`;
+            
+            fs.writeFileSync(scriptPath, pythonCode);
+
+            return { 
+                content: [{ 
+                    type: "text", 
+                    text: `✅ **Automazione Server Completata!**\n\n1. Nuovi Ruoli: ${createdRoles.join(", ") || "Nessuno"}\n2. Nuovi Canali: ${createdChannels.join(", ") || "Nessuno"}\n3. Webhook creato in canale: <#${targetWebhookChannelId}>\n4. Script Python autogenerato in: ${scriptPath}` 
+                }] 
+            };
+        }
       }
 
       case "view_channel_current_bot_isin": {
