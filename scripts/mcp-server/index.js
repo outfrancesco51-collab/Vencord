@@ -151,6 +151,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "mute_deafen_user",
+        description: "Applica o rimuove il Silenziamento nel Server (mute) e/o il Silenzia Server (deafen) a un utente connesso in vocale.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            user_id: { type: "string" },
+            mute: { type: "boolean", description: "true per mutare (Silenziamento nel server), false per smutarlo" },
+            deaf: { type: "boolean", description: "true per assordare (Silenzia server), false per riattivare l'audio" }
+          },
+          required: ["guild_id", "user_id"],
+        },
+      },
+      {
         name: "isolate_and_timeout_user",
         description: "Rimuove tutti i ruoli, sposta in un canale specifico e mette in timeout, risolvendo il server in automatico",
         inputSchema: {
@@ -199,6 +213,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             new_roles: { type: "array", items: { type: "string" }, description: "Nomi dei nuovi Ruoli da creare (solo per execute)" }
           },
           required: ["target_id", "action"],
+        },
+      },
+      {
+        name: "play_music",
+        description: "Fa entrare il bot in un canale vocale e riproduce l'audio da un link YouTube (es. se l'utente ti chiede di mettere musica).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            channel_id: { type: "string", description: "L'ID del canale vocale in cui entrare" },
+            url: { type: "string", description: "Il link al video di YouTube o la traccia" }
+          },
+          required: ["guild_id", "channel_id", "url"],
         },
       }
     ],
@@ -617,6 +644,88 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 }] 
             };
         }
+      }
+
+      case "mute_deafen_user": {
+        try {
+            await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}`, "PATCH", {
+                mute: args.mute,
+                deaf: args.deaf
+            });
+            return { content: [{ type: "text", text: `Successo: Utente ${args.user_id} aggiornato! Mute: ${args.mute}, Deaf: ${args.deaf}` }] };
+        } catch (e) {
+            if (e.message.includes("50013")) throw new Error("Errore 50013: Manca il permesso MUTE_MEMBERS o DEAFEN_MEMBERS al bot, oppure stai cercando di silenziare qualcuno più in alto di te nella gerarchia dei ruoli.");
+            throw e;
+        }
+      }
+
+      case "play_music": {
+          const fs = require('fs');
+          const path = require('path');
+          const { spawn } = require('child_process');
+          
+          const scriptCode = `
+const { Client, GatewayIntentBits } = require('discord.js');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
+const play = require('play-dl');
+const fs = require('fs');
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+
+client.once('ready', async () => {
+    try {
+        const guild = await client.guilds.fetch("${args.guild_id}");
+        const channel = await guild.channels.fetch("${args.channel_id}");
+        
+        const connection = joinVoiceChannel({
+            channelId: channel.id,
+            guildId: channel.guild.id,
+            adapterCreator: channel.guild.voiceAdapterCreator,
+        });
+
+        const stream = await play.stream("${args.url}");
+        const resource = createAudioResource(stream.stream, { inputType: stream.type });
+        const player = createAudioPlayer();
+        
+        player.play(resource);
+        connection.subscribe(player);
+        
+        player.on(AudioPlayerStatus.Idle, () => {
+            connection.destroy();
+            client.destroy();
+            process.exit(0);
+        });
+        
+        player.on('error', error => {
+            console.error('Error:', error.message);
+            connection.destroy();
+            client.destroy();
+            process.exit(1);
+        });
+    } catch(e) {
+        console.error("Errore:", e);
+        process.exit(1);
+    }
+});
+
+const configPath = require('path').join(__dirname, '../../mcp_configs/unsloth_mcp.json');
+let token = process.env.DISCORD_MCP_TOKEN;
+if (!token) {
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        token = config.env.DISCORD_MCP_TOKEN;
+    } catch(e) {}
+}
+
+client.login(token);
+`;
+          const scriptPath = path.join(__dirname, 'music_player_bot.js');
+          fs.writeFileSync(scriptPath, scriptCode);
+          
+          const child = spawn('node', [scriptPath], { detached: true, stdio: 'ignore', env: process.env });
+          child.unref();
+
+          return { content: [{ type: "text", text: `🎵 Ho avviato il bot musicale in background! Entrerà nel canale vocale <#${args.channel_id}> e riprodurrà: ${args.url}` }] };
       }
 
       case "view_channel_current_bot_isin": {
