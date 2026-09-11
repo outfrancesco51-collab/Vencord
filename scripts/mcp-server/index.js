@@ -221,11 +221,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: "object",
           properties: {
-            guild_id: { type: "string" },
+            guild_id: { type: "string", description: "Opzionale. Se non fornito, viene dedotto dal canale." },
             channel_id: { type: "string", description: "L'ID del canale vocale in cui entrare" },
             url: { type: "string", description: "Il link al video di YouTube o la traccia" }
           },
-          required: ["guild_id", "channel_id", "url"],
+          required: ["channel_id", "url"],
         },
       }
     ],
@@ -664,6 +664,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           const path = require('path');
           const { spawn } = require('child_process');
           
+          let resolvedGuildId = args.guild_id;
+          if (!resolvedGuildId) {
+              const ch = await discordApiRequest(`/channels/${args.channel_id}`, "GET");
+              resolvedGuildId = ch.guild_id;
+          }
+          if (!resolvedGuildId) throw new Error("Impossibile dedurre il server (guild_id) dal canale fornito.");
+
           const scriptCode = `
 const { Client, GatewayIntentBits } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus } = require('@discordjs/voice');
@@ -674,7 +681,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 
 client.once('ready', async () => {
     try {
-        const guild = await client.guilds.fetch("${args.guild_id}");
+        const guild = await client.guilds.fetch("${resolvedGuildId}");
         const channel = await guild.channels.fetch("${args.channel_id}");
         
         const connection = joinVoiceChannel({
