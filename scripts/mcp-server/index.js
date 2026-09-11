@@ -227,6 +227,43 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           required: ["channel_id", "url"],
         },
+      },
+      {
+        name: "search_user_information",
+        description: "Effettua una ricerca OSINT in stile Sherlock per trovare se un username esiste su vari social network e siti web (GitHub, Reddit, Steam, YouTube, ecc).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: { type: "string", description: "L'username da cercare" }
+          },
+          required: ["username"],
+        },
+      },
+      {
+        name: "webcam_image",
+        description: "Accende la 'webcam' in un canale vocale, trasmettendo un'immagine fissa al posto del video reale (Fake Camera streaming).",
+        inputSchema: {
+          type: "object",
+          properties: {
+            channel_id: { type: "string", description: "L'ID del canale vocale" },
+            image_url: { type: "string", description: "L'URL o il percorso dell'immagine da mostrare" }
+          },
+          required: ["channel_id", "image_url"],
+        },
+      },
+      {
+        name: "auto_message",
+        description: "Genera e avvia un bot autonomo che 'ascolta' i messaggi di un utente specifico in un canale e usa l'intelligenza artificiale (Unsloth locale) per generare risposte automatiche.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            channel_id: { type: "string", description: "L'ID del canale testuale dove il bot ascolterà" },
+            target_user_id: { type: "string", description: "L'ID dell'utente da ascoltare (se null, risponde a tutti)" },
+            system_prompt: { type: "string", description: "Il prompt di sistema che dice all'IA come comportarsi e rispondere (es. 'Sei un assistente sarcastico')" },
+            unsloth_api_url: { type: "string", description: "L'endpoint API locale di Unsloth (es. http://127.0.0.1:8080/v1/chat/completions)" }
+          },
+          required: ["channel_id", "system_prompt", "unsloth_api_url"],
+        },
       }
     ],
   };
@@ -733,6 +770,115 @@ client.login(token);
           child.unref();
 
           return { content: [{ type: "text", text: `🎵 Ho avviato il bot musicale in background! Entrerà nel canale vocale <#${args.channel_id}> e riprodurrà: ${args.url}` }] };
+      }
+
+      case "search_user_information": {
+        const username = args.username;
+        const sites = [
+            { name: "GitHub", url: `https://github.com/${username}` },
+            { name: "X/Twitter", url: `https://twitter.com/${username}` },
+            { name: "Reddit", url: `https://www.reddit.com/user/${username}` },
+            { name: "Instagram", url: `https://www.instagram.com/${username}/` },
+            { name: "Steam", url: `https://steamcommunity.com/id/${username}` }
+        ];
+
+        let results = [];
+        for (const site of sites) {
+            try {
+                const response = await fetch(site.url, {
+                    method: 'GET',
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36' }
+                });
+                if (response.status === 200) {
+                    results.push(`✅ TROVATO: ${site.name} -> ${site.url}`);
+                } else {
+                    results.push(`❌ Non Trovato: ${site.name}`);
+                }
+            } catch (e) {
+                results.push(`⚠️ Errore con ${site.name}`);
+            }
+        }
+        return { content: [{ type: "text", text: `🔎 Ricerca OSINT (Sherlock) per l'utente '${username}':\n\n${results.join('\n')}` }] };
+      }
+
+      case "webcam_image": {
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Salva la configurazione affinché il plugin Vencord showCamera possa leggerla
+          const configPath = path.join(__dirname, '..', '..', 'fake_camera_config.json');
+          fs.writeFileSync(configPath, JSON.stringify({
+              channelId: args.channel_id,
+              imageUrl: args.image_url,
+              active: true
+          }));
+
+          return { content: [{ type: "text", text: `📷 Configurazione Webcam salvata con l'immagine fornita!\nAssicurati di aver compilato il plugin Vencord 'showCamera' che leggerà questa immagine per trasmetterla al posto della tua webcam vera nel canale ${args.channel_id}.` }] };
+      }
+
+      case "auto_message": {
+          const fs = require('fs');
+          const path = require('path');
+          const { spawn } = require('child_process');
+          
+          const scriptCode = `
+const { Client, GatewayIntentBits } = require('discord.js');
+const fs = require('fs');
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+    if (message.channel.id !== "${args.channel_id}") return;
+    
+    // Se c'è un target, ignora gli altri
+    const target = "${args.target_user_id || ''}";
+    if (target && target !== "null" && message.author.id !== target) return;
+
+    try {
+        await message.channel.sendTyping();
+        
+        // Chiamata all'API di Unsloth
+        const response = await fetch("${args.unsloth_api_url}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'unsloth-local', 
+                messages: [
+                    { role: 'system', content: \`${args.system_prompt}\` },
+                    { role: 'user', content: message.content }
+                ],
+                stream: false
+            })
+        });
+
+        const data = await response.json();
+        let replyText = data.choices ? data.choices[0].message.content : (data.response || "Non so cosa dire!");
+        await message.reply(replyText);
+    } catch (error) {
+        console.error('Errore:', error);
+    }
+});
+
+const configPath = require('path').join(__dirname, '../../mcp_configs/unsloth_mcp.json');
+let token = process.env.DISCORD_MCP_TOKEN;
+if (!token) {
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        token = config.env.DISCORD_MCP_TOKEN;
+    } catch(e) {}
+}
+
+client.login(token);
+console.log("Bot in ascolto...");
+`;
+          const scriptPath = path.join(__dirname, 'auto_message_bot.js');
+          fs.writeFileSync(scriptPath, scriptCode);
+          
+          const child = spawn('node', [scriptPath], { detached: true, stdio: 'ignore', env: process.env });
+          child.unref();
+
+          return { content: [{ type: "text", text: `🤖 Bot Auto-Message Avviato! Il bot è ora in ascolto nel canale <#${args.channel_id}> e userà l'intelligenza artificiale per rispondere in automatico ai messaggi!` }] };
       }
 
       case "view_channel_current_bot_isin": {
