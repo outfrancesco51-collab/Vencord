@@ -8,6 +8,7 @@ export const UpdateLogger = new Logger("Updater", "white");
 export let isOutdated = false;
 export let isNewer = false;
 export let updateError: any;
+export let changes: any[] = [];
 
 export async function checkUpdates() {
     return { hasUpdate: false, message: "Aggiornamenti bloccati dalla versione modificata" };

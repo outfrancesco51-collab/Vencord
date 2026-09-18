@@ -1,4 +1,4 @@
-import { definePlugin } from "@vencord/core";
+import definePlugin from "@utils/types";
 
 export default definePlugin({
     name: "UploadWithoutNitro",
