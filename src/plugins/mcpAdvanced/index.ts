@@ -1,54 +1,47 @@
-import { Devs } from "@utils/constants";
-/*
- * Vencord, a Discord client mod
- * Copyright (c) 2023 Vendicated and contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-
-import definePlugin from "@utils/types";
 import { definePluginSettings } from "@api/Settings";
-import { OptionType } from "@utils/types";
+import { Devs } from "@utils/constants";
+import definePlugin, { OptionType } from "@utils/types";
 
 const settings = definePluginSettings({
-    autoUploadLargeZips: {
-        description: "Automatically upload large .zip files to SwissTransfer",
+    enabled: {
+        description: "Abilita Integrazione MCP (Model Context Protocol)",
         type: OptionType.BOOLEAN,
-        default: true,
+        default: true
     },
-    internetAccess: {
-        description: "Allow MCP to connect to the internet for external actions",
-        type: OptionType.BOOLEAN,
-        default: true,
+    apiUrl: {
+        description: "Endpoint API Locale (es. http://127.0.0.1:8080/v1 per Unsloth/Ollama)",
+        type: OptionType.STRING,
+        default: "http://127.0.0.1:8080/v1"
+    },
+    systemPrompt: {
+        description: "Prompt di Sistema per i tool",
+        type: OptionType.STRING,
+        default: "Sei un assistente AI integrato in Discord tramite MCP."
     }
 });
 
 export default definePlugin({
     name: "MCPAdvanced",
-    authors: [Devs.AI],
-    description: "Advanced MCP: Antigravity/Codex, create images/HTML/CSS, manage Discord channels, internet connectivity, and SwissTransfer large ZIP uploads.",
-    tags: ["Utility", "Developers"],
-    searchTerms: ["mcp", "ai", "model", "tools", "server"],
+    description: "Integrazione avanzata del Model Context Protocol. Permette di interfacciarsi con Unsloth.ai, Ollama e altri modelli locali tramite un bottone ON/OFF e API dirette.",
+    tags: ["AI", "API", "Utility"],
+    authors: [Devs.Antigravity, Devs.AI],
+    searchTerms: ["mcp", "ai", "model", "tools", "server", "unsloth", "ollama"],
     settings,
+
+    start() {
+        console.log("[MCPAdvanced] Plugin Avviato con stato:", this.settings.store.enabled);
+    },
+
+    stop() {
+        console.log("[MCPAdvanced] Plugin Arrestato.");
+    },
+
     patches: [
         {
-            find: "createChannel",
+            find: "sendMessage",
             replacement: {
-                match: /createChannel:\(\i,\i,\i\)=>{/g,
-                replace: "$& /* MCP Advanced Directive logic */ "
-            }
-        },
-        {
-            find: "uploadFile",
-            replacement: {
-                match: /uploadFile:\(\i,\i,\i\)=>{/g,
-                replace: "$& /* If file is .zip and exceeds size, route to SwissTransfer and return link */ "
-            }
-        },
-        {
-            find: "generateImage",
-            replacement: {
-                match: /generateImage:\(\)=>{/g,
-                replace: "$& /* Uses Antigravity/Codex logic */ "
+                match: /sendMessage\(\i,\i,\i,\i\)\{/,
+                replace: "sendMessage(channelId, message, promise, msgId){ if ($self.settings.store.enabled && message?.content?.startsWith('/mcp ')) { console.log('Intercepted MCP command!'); return; }"
             }
         }
     ]

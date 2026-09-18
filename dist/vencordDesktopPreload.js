@@ -1,4 +1,4 @@
-// Vencord c519d667
+// Vencord e40f195a
 // Standalone: false
 // Platform: win32
 // Updater Disabled: false
