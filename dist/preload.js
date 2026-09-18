@@ -1,4 +1,4 @@
-// Vencord e40f195a
+// Vencord 76468d88
 // Standalone: false
 // Platform: win32
 // Updater Disabled: false

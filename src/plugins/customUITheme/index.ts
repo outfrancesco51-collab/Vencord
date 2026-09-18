@@ -13,6 +13,11 @@ import myPluginStyle from "./style.css?managed";
 
 export const themeOptions = [
     { label: "🪟 Windows XP (Luna Blue - Predefinito)", value: "winxp", default: true },
+    { label: "💾 Windows 98 (Classic 3D)", value: "win98" },
+    { label: "💾 Windows 95 (Retro Gray)", value: "win95" },
+    { label: "💿 PS2 (Crystal Blue / Black)", value: "ps2" },
+    { label: "💿 PS1 (Classic Console Gray)", value: "ps1" },
+    { label: "📱 PSP (XMB Wave UI)", value: "psp" },
     { label: "✨ Windows 11 (Fluent & Mica)", value: "win11" },
     { label: "⬛ Windows 10 Dark (Metro Flat)", value: "win10dark" },
     { label: "⬜ Windows 10 Light (Metro Flat)", value: "win10light" },

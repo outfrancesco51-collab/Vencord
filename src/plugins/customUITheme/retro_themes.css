@@ -1,0 +1,122 @@
+/* --------------------------------------------------------------------------
+   9. WINDOWS 95 (Retro Gray)
+   -------------------------------------------------------------------------- */
+[data-os-theme="win95"] {
+    --brand-experiment: #000080;
+    --background-primary: #c0c0c0 !important;
+    --background-secondary: #c0c0c0 !important;
+    --background-secondary-alt: #808080 !important;
+    --background-tertiary: #000080 !important;
+    --background-floating: #c0c0c0 !important;
+    --channeltextarea-background: #ffffff !important;
+    --text-normal: #000000 !important;
+    --text-muted: #555555 !important;
+    --header-primary: #ffffff !important;
+    font-family: "MS Sans Serif", Tahoma, sans-serif !important;
+}
+[data-os-theme="win95"] * {
+    border-radius: 0 !important;
+}
+[data-os-theme="win95"] button, [data-os-theme="win95"] .button_dd4f85 {
+    background-color: #c0c0c0 !important;
+    border: 2px solid;
+    border-color: #ffffff #000000 #000000 #ffffff !important;
+    color: black !important;
+    box-shadow: inset 1px 1px #dfdfdf, inset -1px -1px #808080 !important;
+}
+[data-os-theme="win95"] button:active, [data-os-theme="win95"] .button_dd4f85:active {
+    border-color: #000000 #ffffff #ffffff #000000 !important;
+    box-shadow: inset 1px 1px #808080, inset -1px -1px #dfdfdf !important;
+}
+[data-os-theme="win95"] .title_a7d72e {
+    background: linear-gradient(90deg, #000080, #1084d0) !important;
+    color: white !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. WINDOWS 98 (Classic 3D)
+   -------------------------------------------------------------------------- */
+[data-os-theme="win98"] {
+    --brand-experiment: #000080;
+    --background-primary: #c0c0c0 !important;
+    --background-secondary: #dfdfdf !important;
+    --background-tertiary: #000080 !important;
+    font-family: "MS Sans Serif", Tahoma, sans-serif !important;
+}
+[data-os-theme="win98"] * {
+    border-radius: 0 !important;
+}
+[data-os-theme="win98"] button, [data-os-theme="win98"] .container_b2ca13 {
+    background-color: #c0c0c0 !important;
+    border: 1px solid #dfdfdf;
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+    border-right-color: #000000;
+    border-bottom-color: #000000;
+    color: black !important;
+}
+[data-os-theme="win98"] .title_a7d72e {
+    background: linear-gradient(90deg, #000080, #1084d0) !important;
+    color: white !important;
+}
+
+/* --------------------------------------------------------------------------
+   11. PS2 (Crystal Blue / Black)
+   -------------------------------------------------------------------------- */
+[data-os-theme="ps2"] {
+    --background-primary: #050a1f !important;
+    --background-secondary: #0a1438 !important;
+    --background-tertiary: #02040d !important;
+    --background-floating: #0a1438 !important;
+    --text-normal: #aaccff !important;
+    --header-primary: #ffffff !important;
+    --brand-experiment: #4d88ff !important;
+}
+[data-os-theme="ps2"] body {
+    background: linear-gradient(180deg, #02040d 0%, #050a1f 50%, #0a1438 100%) !important;
+}
+[data-os-theme="ps2"] .container_b2ca13, [data-os-theme="ps2"] button {
+    background: rgba(20, 40, 100, 0.5) !important;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(100, 150, 255, 0.3) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 0 10px rgba(77, 136, 255, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   12. PS1 (Classic Console Gray)
+   -------------------------------------------------------------------------- */
+[data-os-theme="ps1"] {
+    --background-primary: #9b9b9b !important;
+    --background-secondary: #8c8c8c !important;
+    --background-tertiary: #7d7d7d !important;
+    --text-normal: #ffffff !important;
+    --header-primary: #000000 !important;
+    --brand-experiment: #df0024 !important; /* PS red */
+}
+[data-os-theme="ps1"] button {
+    background-color: #8c8c8c !important;
+    border: 3px solid #7d7d7d !important;
+    border-radius: 50px !important; /* Circular like controller buttons */
+    color: white !important;
+}
+
+/* --------------------------------------------------------------------------
+   13. PSP (XMB Wave UI)
+   -------------------------------------------------------------------------- */
+[data-os-theme="psp"] {
+    --background-primary: transparent !important;
+    --background-secondary: rgba(0,0,0,0.3) !important;
+    --background-tertiary: transparent !important;
+    --text-normal: #ffffff !important;
+}
+[data-os-theme="psp"] body {
+    background: linear-gradient(135deg, #115599 0%, #3388cc 50%, #55aaff 100%) !important;
+}
+[data-os-theme="psp"] .sidebar_a4d4d9 {
+    background: transparent !important;
+}
+[data-os-theme="psp"] * {
+    font-family: "Open Sans", sans-serif !important;
+    letter-spacing: 0.5px;
+}
