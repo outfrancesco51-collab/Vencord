@@ -66,9 +66,11 @@ if (Test-Path $roamingVencord) {
 
 # 5. Riapplica l'installazione moderna pulita
 Write-Host "`n[5/5] Re-installazione pulita e moderna di Vencord..." -ForegroundColor Yellow
-& (Join-Path $PSScriptRoot "PatcherDefinitivo.ps1")
+& (Join-Path $PSScriptRoot "PatcherDefinitivo.ps1") -NoPause
 
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "  PULIZIA PROFONDA COMPLETATA CON SUCCESSO!                 " -ForegroundColor Green
 Write-Host "  Ogni conflitto, cache corrotta e vecchio hook e' rimosso. " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
+Write-Host "`nOra puoi riavviare Discord pulito al 100%!" -ForegroundColor Cyan
+

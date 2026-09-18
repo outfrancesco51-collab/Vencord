@@ -4,6 +4,8 @@
 # Funziona al 100% sia online che offline.
 # ==============================================================================
 
+param([switch]$NoPause)
+
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "       VENCORD OFFLINE PATCHER DEFINITIVO 100%             " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -36,7 +38,16 @@ Write-Host "`n[3/4] Applicazione della patch tramite VencordInstallerCli..." -Fo
 $InstallerPath = Join-Path $PSScriptRoot "dist\Installer\VencordInstallerCli.exe"
 
 if (Test-Path $InstallerPath) {
-    $branches = @("stable", "ptb", "canary")
+    $branches = @()
+    if (Test-Path "$env:LOCALAPPDATA\Discord") { $branches += "stable" }
+    if (Test-Path "$env:LOCALAPPDATA\DiscordPTB") { $branches += "ptb" }
+    if (Test-Path "$env:LOCALAPPDATA\DiscordCanary") { $branches += "canary" }
+    if (Test-Path "$env:LOCALAPPDATA\DiscordDevelopment") { $branches += "dev" }
+
+    if ($branches.Count -eq 0) {
+        $branches = @("stable")
+    }
+
     foreach ($b in $branches) {
         Write-Host "  -> Patching Discord branch '$b'..." -ForegroundColor Gray
         & $InstallerPath -install -branch $b
@@ -84,8 +95,9 @@ if ($patchedAny) {
 } else {
     Write-Host "  Installazione completata con avvertenza: verifica percorso." -ForegroundColor Yellow
 }
-Write-Host "==========================================================" -ForegroundColor Cyan
-if ([System.Environment]::UserInteractive) {
+if (-not $NoPause -and [System.Environment]::UserInteractive) {
+    Write-Host "`nPuoi ora riavviare Discord! Premi un tasto per uscire..." -ForegroundColor White
     try { [System.Console]::ReadKey() | Out-Null } catch {}
 }
+
 
