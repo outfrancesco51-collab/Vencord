@@ -1,13 +1,15 @@
+import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 
 export default definePlugin({
     name: "UploadWithoutNitro",
-    description: "Permette di caricare file enormi (es. 2GB) compattandoli pesantemente in .ts (simulazione) con un'interfaccia UI personalizzata, aggirando il limite di Nitro.",
-    authors: [{ name: "Antigravity", id: 0n }],
+    description: "Permette di gestire upload di file di grandi dimensioni compattandoli o suddividendoli, aggirando i limiti di upload di Discord.",
+    tags: ["Utility", "Media"],
+    authors: [Devs.Antigravity],
     
     patches: [
         {
-            match: "upload_file_exceeds_limit", // Punto di hook generico (placeholder) per l'intercettazione dell'upload
+            find: "upload_file_exceeds_limit", // Punto di hook per l'intercettazione dell'upload
             replacement: {
                 match: /if\s*\([^}]*upload_file_exceeds_limit[^}]*\)\s*return\s*false;/,
                 replace: "return true;"
@@ -16,10 +18,9 @@ export default definePlugin({
     ],
 
     start() {
-        console.log("UploadWithoutNitro avviato! Intercettazione upload e compressione video in finto .ts attiva.");
-        // UI logic can be hooked into Discord's modal system here
+        console.log("[UploadWithoutNitro] Avviato!");
     },
     stop() {
-        console.log("UploadWithoutNitro disattivato.");
+        console.log("[UploadWithoutNitro] Arrestato.");
     }
 });

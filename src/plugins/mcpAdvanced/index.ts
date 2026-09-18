@@ -1,3 +1,4 @@
+import { Devs } from "@utils/constants";
 /*
  * Vencord, a Discord client mod
  * Copyright (c) 2023 Vendicated and contributors
@@ -11,21 +12,21 @@ import { OptionType } from "@utils/types";
 const settings = definePluginSettings({
     autoUploadLargeZips: {
         description: "Automatically upload large .zip files to SwissTransfer",
-        type: OptionType.SWITCH,
+        type: OptionType.BOOLEAN,
         default: true,
     },
     internetAccess: {
         description: "Allow MCP to connect to the internet for external actions",
-        type: OptionType.SWITCH,
+        type: OptionType.BOOLEAN,
         default: true,
     }
 });
 
 export default definePlugin({
     name: "MCPAdvanced",
-    authors: [{ name: "AI", id: 0n }],
+    authors: [Devs.AI],
     description: "Advanced MCP: Antigravity/Codex, create images/HTML/CSS, manage Discord channels, internet connectivity, and SwissTransfer large ZIP uploads.",
-    tags: ["AI", "Advanced", "Utility"],
+    tags: ["Utility", "Developers"],
     settings,
     patches: [
         {

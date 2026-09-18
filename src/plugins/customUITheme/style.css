@@ -1,13 +1,278 @@
-/* Windows XP/Vista custom mock CSS */
-.theme-dark {
-    --background-primary: #ECE9D8 !important; /* XP silver/blue tint */
-    --background-secondary: #003399 !important; /* XP Blue title bar vibe */
-    --text-normal: #000000 !important;
-}
+/* ==========================================================================
+   Vencord OS Themes & Interface Overhaul System
+   Styles for: Windows XP (Default), Windows 11, Windows 10 Dark, Windows 10 Light,
+               Windows 8, Windows 7, Windows 2000, Ubuntu
+   ========================================================================== */
 
-.theme-light {
+/* --------------------------------------------------------------------------
+   1. WINDOWS XP (Luna Blue Theme - Default)
+   -------------------------------------------------------------------------- */
+[data-os-theme="winxp"] {
+    --brand-experiment: #0055ea;
+    --brand-experiment-hover: #0045c7;
     --background-primary: #ECE9D8 !important;
-    --background-secondary: #003399 !important;
+    --background-secondary: #D8D2BD !important;
+    --background-secondary-alt: #CDC6AE !important;
+    --background-tertiary: #0055ea !important;
+    --background-floating: #FFFFFF !important;
+    --channeltextarea-background: #FFFFFF !important;
+    --text-normal: #000000 !important;
+    --text-muted: #444444 !important;
+    --header-primary: #000080 !important;
+    --interactive-normal: #1f2937 !important;
+    --interactive-hover: #0055ea !important;
+    --interactive-active: #003db3 !important;
+    font-family: "Tahoma", "Segoe UI", Arial, sans-serif !important;
 }
 
-/* Add more extensive overrides here for full Windows XP / Vista look */
+[data-os-theme="winxp"] [class*="title_"],
+[data-os-theme="winxp"] [class*="sidebar_"] [class*="header_"] {
+    background: linear-gradient(180deg, #0058ee 0%, #3593ff 4%, #288eff 6%, #1279fd 8%, #0368fa 10%, #0262f2 14%, #0054e3 20%, #0061f7 90%, #0045c7 100%) !important;
+    color: #ffffff !important;
+    text-shadow: 1px 1px 1px #002277;
+    border-bottom: 2px solid #002277 !important;
+}
+
+[data-os-theme="winxp"] [class*="sidebar_"] {
+    background: #D8D2BD !important;
+    border-right: 2px solid #999488 !important;
+}
+
+[data-os-theme="winxp"] [class*="guilds_"] {
+    background: #0055ea !important;
+    border-right: 2px solid #002277 !important;
+}
+
+[data-os-theme="winxp"] button[class*="button_"],
+[data-os-theme="winxp"] .vc-os-btn {
+    border: 2px outset #ffffff !important;
+    background: linear-gradient(180deg, #ffffff 0%, #ece9d8 100%) !important;
+    color: #000000 !important;
+    border-radius: 3px !important;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-os-theme="winxp"] button[class*="button_"]:active {
+    border-style: inset !important;
+}
+
+[data-os-theme="winxp"] [class*="channelTextArea_"] {
+    border: 2px inset #7f9db9 !important;
+    background: #ffffff !important;
+    border-radius: 2px !important;
+}
+
+[data-os-theme="winxp"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #cbe1ff 0%, #68a2ee 50%, #4384d5 100%) !important;
+    border: 1px solid #2f5f9e !important;
+    border-radius: 2px !important;
+}
+
+[data-os-theme="winxp"] ::-webkit-scrollbar-track {
+    background: #f1efe2 !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. WINDOWS 11 (Fluent Mica Theme)
+   -------------------------------------------------------------------------- */
+[data-os-theme="win11"] {
+    --brand-experiment: #0078d4;
+    --brand-experiment-hover: #106ebe;
+    --background-primary: rgba(32, 32, 32, 0.85) !important;
+    --background-secondary: rgba(28, 28, 28, 0.80) !important;
+    --background-secondary-alt: rgba(24, 24, 24, 0.90) !important;
+    --background-tertiary: rgba(20, 20, 20, 0.95) !important;
+    --background-floating: rgba(36, 36, 36, 0.95) !important;
+    --channeltextarea-background: rgba(45, 45, 45, 0.7) !important;
+    backdrop-filter: blur(25px) saturate(1.4);
+    font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif !important;
+}
+
+[data-os-theme="win11"] [class*="sidebar_"],
+[data-os-theme="win11"] [class*="chat_"],
+[data-os-theme="win11"] [class*="guilds_"] {
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    margin: 2px !important;
+}
+
+[data-os-theme="win11"] button[class*="button_"] {
+    border-radius: 6px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    transition: all 0.15s ease-in-out !important;
+}
+
+[data-os-theme="win11"] [class*="channelTextArea_"] {
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. WINDOWS 10 DARK (Flat Metro Dark)
+   -------------------------------------------------------------------------- */
+[data-os-theme="win10dark"] {
+    --brand-experiment: #0078d7;
+    --background-primary: #1f1f1f !important;
+    --background-secondary: #181818 !important;
+    --background-secondary-alt: #141414 !important;
+    --background-tertiary: #101010 !important;
+    --channeltextarea-background: #2b2b2b !important;
+    border-radius: 0px !important;
+    font-family: "Segoe UI", Tahoma, sans-serif !important;
+}
+
+[data-os-theme="win10dark"] * {
+    border-radius: 0px !important;
+}
+
+[data-os-theme="win10dark"] [class*="channelTextArea_"] {
+    border: 1px solid #333333 !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. WINDOWS 10 LIGHT (Flat Metro Light)
+   -------------------------------------------------------------------------- */
+[data-os-theme="win10light"] {
+    --brand-experiment: #0078d7;
+    --background-primary: #f3f3f3 !important;
+    --background-secondary: #e6e6e6 !important;
+    --background-secondary-alt: #dadada !important;
+    --background-tertiary: #cecece !important;
+    --channeltextarea-background: #ffffff !important;
+    --text-normal: #111111 !important;
+    --text-muted: #555555 !important;
+    --header-primary: #000000 !important;
+    font-family: "Segoe UI", Tahoma, sans-serif !important;
+}
+
+[data-os-theme="win10light"] * {
+    border-radius: 0px !important;
+}
+
+[data-os-theme="win10light"] [class*="channelTextArea_"] {
+    border: 1px solid #b5b5b5 !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. WINDOWS 8 (Metro Modern Tiles)
+   -------------------------------------------------------------------------- */
+[data-os-theme="win8"] {
+    --brand-experiment: #00a4ef;
+    --background-primary: #1b1b1b !important;
+    --background-secondary: #0f0f0f !important;
+    --background-tertiary: #00a4ef !important;
+    --channeltextarea-background: #252525 !important;
+    font-family: "Segoe UI", sans-serif !important;
+}
+
+[data-os-theme="win8"] * {
+    border-radius: 0 !important;
+}
+
+[data-os-theme="win8"] [class*="guilds_"] {
+    background: #00a4ef !important;
+}
+
+[data-os-theme="win8"] [class*="title_"] {
+    background: #0072c6 !important;
+    color: #ffffff !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. WINDOWS 7 (Aero Glass & Glow)
+   -------------------------------------------------------------------------- */
+[data-os-theme="win7"] {
+    --brand-experiment: #1e88e5;
+    --background-primary: rgba(22, 33, 44, 0.90) !important;
+    --background-secondary: rgba(18, 27, 36, 0.92) !important;
+    --background-tertiary: rgba(12, 19, 26, 0.95) !important;
+    --channeltextarea-background: rgba(30, 45, 60, 0.8) !important;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif !important;
+}
+
+[data-os-theme="win7"] [class*="title_"],
+[data-os-theme="win7"] [class*="sidebar_"] [class*="header_"] {
+    background: linear-gradient(180deg, rgba(160, 210, 255, 0.6) 0%, rgba(50, 110, 190, 0.8) 50%, rgba(20, 60, 120, 0.9) 100%) !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 0 15px rgba(0, 150, 255, 0.35) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-os-theme="win7"] button[class*="button_"] {
+    border-radius: 4px !important;
+    border: 1px solid rgba(130, 190, 255, 0.6) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(80, 140, 220, 0.8) 50%, rgba(40, 100, 180, 0.9) 100%) !important;
+    box-shadow: 0 0 6px rgba(0, 150, 255, 0.4) !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. WINDOWS 2000 (Classic NT Professional)
+   -------------------------------------------------------------------------- */
+[data-os-theme="win2000"] {
+    --brand-experiment: #0a246a;
+    --background-primary: #c0c0c0 !important;
+    --background-secondary: #d4d0c8 !important;
+    --background-secondary-alt: #b8b4ac !important;
+    --background-tertiary: #808080 !important;
+    --channeltextarea-background: #ffffff !important;
+    --text-normal: #000000 !important;
+    --text-muted: #333333 !important;
+    --header-primary: #000080 !important;
+    font-family: "MS Sans Serif", "Tahoma", sans-serif !important;
+}
+
+[data-os-theme="win2000"] [class*="title_"] {
+    background: linear-gradient(90deg, #0a246a 0%, #a6caf0 100%) !important;
+    color: #ffffff !important;
+    font-weight: bold !important;
+}
+
+[data-os-theme="win2000"] [class*="sidebar_"] {
+    background: #d4d0c8 !important;
+    border: 2px inset #ffffff !important;
+}
+
+[data-os-theme="win2000"] button[class*="button_"] {
+    border: 2px outset #ffffff !important;
+    background: #c0c0c0 !important;
+    color: #000000 !important;
+    border-radius: 0 !important;
+}
+
+[data-os-theme="win2000"] button[class*="button_"]:active {
+    border: 2px inset #ffffff !important;
+}
+
+/* --------------------------------------------------------------------------
+   8. UBUNTU (Yaru Canonical Orange & Aubergine)
+   -------------------------------------------------------------------------- */
+[data-os-theme="ubuntu"] {
+    --brand-experiment: #E95420;
+    --brand-experiment-hover: #c33a0c;
+    --background-primary: #300A24 !important;
+    --background-secondary: #2C001E !important;
+    --background-secondary-alt: #200015 !important;
+    --background-tertiary: #190010 !important;
+    --channeltextarea-background: #401032 !important;
+    --text-normal: #FFFFFF !important;
+    --text-muted: #AEA79F !important;
+    --header-primary: #E95420 !important;
+    font-family: "Ubuntu", "DejaVu Sans", sans-serif !important;
+}
+
+[data-os-theme="ubuntu"] [class*="title_"] {
+    background: #2C001E !important;
+    border-bottom: 2px solid #E95420 !important;
+}
+
+[data-os-theme="ubuntu"] [class*="guilds_"] {
+    background: #190010 !important;
+    border-right: 1px solid #5E2750 !important;
+}
+
+[data-os-theme="ubuntu"] button[class*="button_"] {
+    border-radius: 6px !important;
+    background: #E95420 !important;
+    color: #FFFFFF !important;
+    border: 1px solid #c33a0c !important;
+}

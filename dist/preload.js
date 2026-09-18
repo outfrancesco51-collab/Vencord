@@ -1,4 +1,4 @@
-// Vencord 70b2ab11
+// Vencord c519d667
 // Standalone: false
 // Platform: win32
 // Updater Disabled: false

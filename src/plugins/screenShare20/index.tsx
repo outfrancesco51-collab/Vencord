@@ -129,8 +129,8 @@ function stopBackgroundMusic() {
 export default definePlugin({
     name: "ScreenShare20",
     description: "🖥️ ScreenShare avanzato: oscura siti specifici e riproduce musica di sottofondo durante la condivisione schermo.",
-    tags: ["ScreenShare", "Privacy", "Music"],
-    authors: [{ name: "Antigravity", id: 0n }],
+    tags: ["Media", "Privacy", "Voice"],
+    authors: [Devs.Antigravity],
     settings,
 
     patches: [

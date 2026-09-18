@@ -1,3 +1,4 @@
+import { Devs } from "@utils/constants";
 /*
  * Vencord, a Discord client mod
  * Copyright (c) 2023 Vendicated and contributors
@@ -32,21 +33,21 @@ const settings = definePluginSettings({
     },
     advancedFormat: {
         description: "Abilita Formattazione Avanzata (Markdown/Code highlights)",
-        type: OptionType.SWITCH,
+        type: OptionType.BOOLEAN,
         default: true,
     },
     webSearch: {
         description: "Abilita Web Search per ricerche Internet",
-        type: OptionType.SWITCH,
+        type: OptionType.BOOLEAN,
         default: true,
     }
 });
 
 export default definePlugin({
     name: "AI",
-    authors: [{ name: "AI", id: 0n }],
+    authors: [Devs.AI],
     description: "Integrazione con Unsloth e LLM locali. Modelli ottimizzati per 8GB, 12GB e 24GB VRAM.",
-    tags: ["AI", "Integration"],
+    tags: ["Utility", "Chat"],
     settings,
     patches: [
         {

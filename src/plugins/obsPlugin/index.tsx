@@ -5,9 +5,8 @@
 
 import { definePluginSettings } from "@api/Settings";
 import { Devs } from "@utils/constants";
-import { openModal, ModalContent, ModalHeader, ModalRoot } from "@utils/modal";
 import definePlugin, { OptionType } from "@utils/types";
-import { Button, Forms, Text, TextInput, useState, useEffect, Menu } from "@webpack/common";
+import { Button, Forms, Menu, Modal, openModal, Text, TextInput, useEffect, useState } from "@webpack/common";
 
 const settings = definePluginSettings({
     obsHost: {
@@ -193,92 +192,79 @@ function OBSControlPanel({ onClose }: { onClose: () => void; }) {
     } as React.CSSProperties);
 
     return (
-        <ModalRoot size="large">
-            <ModalHeader>
-                <Text variant="heading-lg/bold">🎬 OBS Plugin — Pannello di Controllo</Text>
-            </ModalHeader>
-            <ModalContent>
-                <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {/* Status & Connect */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <span style={{ fontSize: "13px", color: connected ? "#57F287" : "#ED4245" }}>{status}</span>
-                        {!connected && (
-                            <button style={btnStyle("#5865F2")} onClick={connect}>Connetti OBS</button>
-                        )}
-                        {connected && (
-                            <button style={btnStyle("#ED4245")} onClick={() => { obsManager.disconnect(); setConnected(false); setStatus("Disconnesso"); }}>Disconnetti</button>
-                        )}
-                    </div>
-
+        <Modal
+            title="🎬 OBS Plugin — Pannello di Controllo"
+            onClose={onClose}
+            transitionState={1}
+        >
+            <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                {/* Status & Connect */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <span style={{ fontSize: "13px", color: connected ? "#57F287" : "#ED4245" }}>{status}</span>
+                    {!connected && (
+                        <button style={btnStyle("#5865F2")} onClick={connect}>Connetti OBS</button>
+                    )}
                     {connected && (
-                        <>
-                            {/* Recording & Streaming */}
-                            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                                <button style={btnStyle(recording ? "#ED4245" : "#57F287")} onClick={toggleRecord}>
-                                    {recording ? "⏹ Ferma Registrazione" : "⏺ Avvia Registrazione"}
-                                </button>
-                                <button style={btnStyle(streaming ? "#ED4245" : "#FAA81A")} onClick={toggleStream}>
-                                    {streaming ? "⏹ Ferma Stream" : "📡 Avvia Stream"}
-                                </button>
-                                <button style={btnStyle("#5865F2")} onClick={saveReplay}>💾 Salva Replay</button>
-                                <button style={btnStyle("#4f545c")} onClick={refreshStatus}>🔄 Aggiorna Stato</button>
-                            </div>
-
-                            {/* Scene Switcher */}
-                            {scenes.length > 0 && (
-                                <div>
-                                    <Text variant="text-sm/bold" style={{ marginBottom: "8px" }}>🎬 Scene</Text>
-                                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                                        {scenes.map(scene => (
-                                            <button
-                                                key={scene}
-                                                style={btnStyle(currentScene === scene ? "#57F287" : "#4f545c")}
-                                                onClick={() => switchScene(scene)}
-                                            >
-                                                {currentScene === scene ? "▶ " : ""}{scene}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Log */}
-                            <div style={{ background: "var(--background-tertiary)", borderRadius: "6px", padding: "8px", maxHeight: "150px", overflowY: "auto" }}>
-                                <Text variant="text-xs/mono" style={{ color: "var(--text-muted)" }}>Log:</Text>
-                                {log.map((entry, i) => (
-                                    <div key={i}><Text variant="text-xs/mono" style={{ color: "var(--text-normal)" }}>{entry}</Text></div>
-                                ))}
-                            </div>
-                        </>
+                        <button style={btnStyle("#ED4245")} onClick={() => { obsManager.disconnect(); setConnected(false); setStatus("Disconnesso"); }}>Disconnetti</button>
                     )}
                 </div>
-            </ModalContent>
-        </ModalRoot>
+
+                {connected && (
+                    <>
+                        {/* Recording & Streaming */}
+                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                            <button style={btnStyle(recording ? "#ED4245" : "#57F287")} onClick={toggleRecord}>
+                                {recording ? "⏹ Ferma Registrazione" : "⏺ Avvia Registrazione"}
+                            </button>
+                            <button style={btnStyle(streaming ? "#ED4245" : "#FAA81A")} onClick={toggleStream}>
+                                {streaming ? "⏹ Ferma Stream" : "📡 Avvia Stream"}
+                            </button>
+                            <button style={btnStyle("#5865F2")} onClick={saveReplay}>💾 Salva Replay</button>
+                            <button style={btnStyle("#4f545c")} onClick={refreshStatus}>🔄 Aggiorna Stato</button>
+                        </div>
+
+                        {/* Scene Switcher */}
+                        {scenes.length > 0 && (
+                            <div>
+                                <Text variant="text-sm/bold" style={{ marginBottom: "8px" }}>🎬 Scene</Text>
+                                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                                    {scenes.map(scene => (
+                                        <button
+                                            key={scene}
+                                            style={btnStyle(currentScene === scene ? "#57F287" : "#4f545c")}
+                                            onClick={() => switchScene(scene)}
+                                        >
+                                            {currentScene === scene ? "▶ " : ""}{scene}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Log */}
+                        <div style={{ background: "var(--background-tertiary)", borderRadius: "6px", padding: "8px", maxHeight: "150px", overflowY: "auto" }}>
+                            <Text variant="text-xs/normal" style={{ color: "var(--text-muted)", fontFamily: "monospace" }}>Log:</Text>
+                            {log.map((entry, i) => (
+                                <div key={i}><Text variant="text-xs/normal" style={{ color: "var(--text-normal)", fontFamily: "monospace" }}>{entry}</Text></div>
+                            ))}
+                        </div>
+                    </>
+                )}
+            </div>
+        </Modal>
     );
 }
 
 export default definePlugin({
     name: "OBSPlugin",
     description: "🎬 Controlla OBS Studio direttamente da Discord: cambia scene, avvia/ferma registrazione, stream, replay buffer — tutto integrato nel client Discord.",
-    tags: ["OBS", "Streaming", "Recording"],
-    authors: [{ name: "Antigravity", id: 0n }],
+    tags: ["Media", "Utility", "Activity"],
+    authors: [Devs.Antigravity],
     settings,
 
-    toolbarActions: [
-        {
-            id: "obs-control",
-            label: "🎬 OBS Control",
-            icon: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="10" fill="#CC0000" opacity="0.9" />
-                    <circle cx="12" cy="12" r="5" fill="white" />
-                </svg>
-            ),
-            action: () => {
-                openModal(props => <OBSControlPanel onClose={props.onClose} />);
-            }
-        }
-    ],
+    toolboxActions: {
+        "🎬 OBS Control": () => openModal(props => <OBSControlPanel onClose={props.onClose} />)
+    },
 
     contextMenus: {
         "guild-context": (children) => {

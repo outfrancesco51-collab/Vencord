@@ -33,8 +33,8 @@ const settings = definePluginSettings({
 export default definePlugin({
     name: "PermissionFreeWill & Ticket Viewer",
     description: "Modifica pesante: Disabilita le restrizioni lato client per i permessi e permette di vedere i ticket e i canali nascosti bypassando VIEW_CHANNEL.",
-    tags: ["Servers", "Roles", "Tickets", "Permissions", "Advanced"],
-    authors: [Devs.lewisakura, { name: "AI", id: 0n }],
+    tags: ["Servers", "Roles", "Utility"],
+    authors: [Devs.lewisakura, Devs.Antigravity],
 
     patches: [
         // Permission lockout, just set the check to true

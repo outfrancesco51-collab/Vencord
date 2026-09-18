@@ -1,3 +1,4 @@
+import { Devs } from "@utils/constants";
 import { definePluginSettings } from "@api/Settings";
 import definePlugin, { OptionType } from "@utils/types";
 import { Logger } from "@utils/Logger";
@@ -9,10 +10,11 @@ const settings = definePluginSettings({
         description: "Link dell'immagine da usare come finta videocamera (es. https://i.imgur.com/...)",
         type: OptionType.STRING,
         default: "https://i.imgur.com/G5X1X2s.jpeg",
+        onChange: () => updateImage()
     },
     enableFakeCamera: {
         description: "Attiva la finta videocamera",
-        type: OptionType.SWITCH,
+        type: OptionType.BOOLEAN,
         default: true,
     }
 });
@@ -26,8 +28,6 @@ function updateImage() {
     currentImage.crossOrigin = "anonymous";
     currentImage.src = settings.store.imageUrl;
 }
-
-settings.addListener(updateImage);
 
 async function getFakeCameraStream(constraints?: MediaStreamConstraints): Promise<MediaStream> {
     if (!settings.store.enableFakeCamera || !constraints?.video) {
@@ -99,8 +99,8 @@ async function getFakeCameraStream(constraints?: MediaStreamConstraints): Promis
 export default definePlugin({
     name: "ShowCamera",
     description: "Permette di usare un'immagine da internet come finta webcam (Fake Camera).",
-    authors: [{ name: "AI", id: 0n }],
-    tags: ["Voice", "Camera", "Utility"],
+    authors: [Devs.AI],
+    tags: ["Voice", "Media", "Utility"],
     settings,
     
     start() {
@@ -120,6 +120,5 @@ export default definePlugin({
         if (fakeStream) {
             fakeStream.getTracks().forEach(t => t.stop());
         }
-        settings.removeListener(updateImage);
     }
 });

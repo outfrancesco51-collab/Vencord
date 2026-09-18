@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-09-18T16:10:21.422Z",
+  "instances": [
+    {
+      "label": "Discord",
+      "settings": {
+        "audioSubsystem": "experimental",
+        "offloadAdmControls": true,
+        "BACKGROUND_COLOR": "#2c2d32",
+        "DESKTOP_TTI_DNSTCP_WARMUP": true,
+        "DESKTOP_TTI_SPLASH_USE_WEBP": true,
+        "DESKTOP_TTI_EARLY_UPDATE_CHECK": true,
+        "DESKTOP_TTI_UPDATE_BACKOFF_MAX_MS": 3000,
+        "chromiumSwitches": {},
+        "IS_MAXIMIZED": false,
+        "IS_MINIMIZED": false,
+        "WINDOW_BOUNDS": {
+          "x": 127,
+          "y": 51,
+          "width": 1282,
+          "height": 727
+        },
+        "asyncVideoInputDeviceInit": true,
+        "DANGEROUS_ENABLE_DEVTOOLS_ONLY_ENABLE_IF_YOU_KNOW_WHAT_YOURE_DOING": true,
+        "MINIMIZE_TO_TRAY": false,
+        "enableHardwareAcceleration": false,
+        "debugLogging": false
+      },
+      "vencordData": null
+    }
+  ],
+  "customPlugins": [
+    "PermissionUltraViewer",
+    "SoundBoardFreeNitro",
+    "ScreenShare20",
+    "OBSPlugin",
+    "UploadWithoutNitro",
+    "CopyAlwaysId"
+  ]
+}

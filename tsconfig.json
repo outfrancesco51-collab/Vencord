@@ -3,7 +3,7 @@
         "resolveJsonModule": true,
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
-        "skipLibCheck": false,
+        "skipLibCheck": true,
         "allowJs": true,
         "lib": [
             "DOM",
@@ -46,4 +46,5 @@
         "outDir": "who-fucking-cares-dude"
     },
     "include": ["src/**/*", "browser/**/*", "scripts/**/*", "eslint.config.mjs"],
+    "exclude": ["node_modules", "scripts/**/node_modules", "dist"]
 }

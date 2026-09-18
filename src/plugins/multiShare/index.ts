@@ -1,3 +1,4 @@
+import { Devs } from "@utils/constants";
 import definePlugin from "@utils/types";
 import { Logger } from "@utils/Logger";
 
@@ -90,7 +91,7 @@ async function getCompositedStream(options: DisplayMediaStreamOptions): Promise<
 export default definePlugin({
     name: "MultiShare",
     description: "Permette di condividere più schermi contemporaneamente (Avanzato - Canvas Compositing).",
-    authors: [{ name: "AI", id: 0n }],
+    authors: [Devs.AI],
     tags: ["Voice", "Utility"],
     
     start() {
