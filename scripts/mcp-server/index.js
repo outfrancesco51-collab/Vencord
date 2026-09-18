@@ -138,6 +138,46 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "delayed_moderation_action",
+        description: "Esegue un kick, ban o timeout ritardato su un utente",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            user_id: { type: "string" },
+            action: { type: "string", enum: ["kick", "ban", "timeout"], description: "Azione da compiere (kick, ban, timeout)" },
+            delay_seconds: { type: "number", description: "Quanti secondi attendere prima dell'azione" }
+          },
+          required: ["guild_id", "user_id", "action", "delay_seconds"],
+        },
+      },
+      {
+        name: "show_current_roles_channel",
+        description: "Mostra tutti gli ID degli utenti presenti in un canale vocale con i loro ruoli attuali.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            channel_id: { type: "string" }
+          },
+          required: ["guild_id", "channel_id"],
+        },
+      },
+      {
+        name: "remove_all_roles",
+        description: "Rimuove tutti i ruoli da un utente (anche specificato tramite un canale in cui si trova), tranne gli ID ruoli da ignorare.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string", description: "Opzionale se deduci dal canale" },
+            channel_id: { type: "string", description: "Opzionale per dedurre la guild e l'utente se non passi l'ID utente diretto" },
+            user_id: { type: "string" },
+            ignore_roles: { type: "array", items: { type: "string" }, description: "Array di ID ruolo da NON rimuovere" }
+          },
+          required: ["user_id", "ignore_roles"],
+        },
+      },
+      {
         name: "ban_user",
         description: "Banna un utente dal server",
         inputSchema: {
@@ -543,6 +583,109 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         return { content: [{ type: "text", text: `Successo! Server ID [${guildId}] risolto. L'utente ${userId} è stato isolato dai ruoli, spostato nel canale ${channelId}, abbiamo atteso 10s e applicato il timeout per ${duration}m.` }] };
+      }
+
+      case "delayed_moderation_action": {
+        const guildId = args.guild_id;
+        const userId = args.user_id;
+        const action = args.action;
+        const delay = args.delay_seconds * 1000;
+
+        setTimeout(async () => {
+            try {
+                if (action === "kick") {
+                    await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "DELETE");
+                } else if (action === "ban") {
+                    await discordApiRequest(`/guilds/${guildId}/bans/${userId}`, "PUT", { delete_message_seconds: 0 });
+                } else if (action === "timeout") {
+                    const timeoutUntil = new Date(Date.now() + 60000 * 60).toISOString(); // 1h default for delayed
+                    await discordApiRequest(`/guilds/${guildId}/members/${userId}`, "PATCH", { communication_disabled_until: timeoutUntil });
+                }
+                console.log(`[DelayedAction] ${action} eseguito su ${userId} con successo!`);
+            } catch (e) {
+                console.error(`[DelayedAction] Errore nell'eseguire ${action} su ${userId}:`, e);
+            }
+        }, delay);
+
+        return { content: [{ type: "text", text: `⏳ Azione di ${action} schedulata! Verrà eseguita in background tra ${args.delay_seconds} secondi su utente ${userId}.` }] };
+      }
+
+      case "show_current_roles_channel": {
+          const fs = require('fs');
+          const path = require('path');
+          
+          const scriptCode = `
+const { Client, GatewayIntentBits } = require('discord.js');
+const fs = require('fs');
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+
+client.once('ready', async () => {
+    try {
+        const guild = await client.guilds.fetch("${args.guild_id}");
+        const channel = await guild.channels.fetch("${args.channel_id}");
+        if (!channel.isVoiceBased()) throw new Error("Non è un canale vocale.");
+        
+        let out = "Utenti in canale: " + channel.name + "\\n";
+        for (const [memberId, member] of channel.members) {
+            const roleIds = member.roles.cache.map(r => r.id).join(", ");
+            out += \`- Utente \${member.user.tag} (ID: \${member.id}) -> Ruoli: \${roleIds}\\n\`;
+        }
+        
+        fs.writeFileSync(require('path').join(__dirname, 'voice_roles_result.txt'), out);
+        client.destroy();
+        process.exit(0);
+    } catch(e) {
+        fs.writeFileSync(require('path').join(__dirname, 'voice_roles_result.txt'), "Errore: " + e.message);
+        process.exit(1);
+    }
+});
+
+const configPath = require('path').join(__dirname, '../../mcp_configs/unsloth_mcp.json');
+let token = process.env.DISCORD_MCP_TOKEN;
+if (!token) {
+    try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        token = config.env.DISCORD_MCP_TOKEN;
+    } catch(e) {}
+}
+client.login(token);
+`;
+          const scriptPath = path.join(__dirname, 'fetch_voice_roles.js');
+          const resultPath = path.join(__dirname, 'voice_roles_result.txt');
+          fs.writeFileSync(scriptPath, scriptCode);
+          
+          // Execute synchronously for MCP
+          const { execSync } = require('child_process');
+          try {
+              execSync('node fetch_voice_roles.js', { cwd: __dirname, timeout: 15000 });
+              const result = fs.readFileSync(resultPath, 'utf8');
+              return { content: [{ type: "text", text: result }] };
+          } catch(e) {
+              return { content: [{ type: "text", text: "Si è verificato un errore durante il fetch degli utenti in vocale. Assicurati che il bot sia acceso e il canale sia corretto." }] };
+          }
+      }
+
+      case "remove_all_roles": {
+        let guildId = args.guild_id;
+        if (!guildId && args.channel_id) {
+            const ch = await discordApiRequest(`/channels/${args.channel_id}`, "GET");
+            guildId = ch.guild_id;
+        }
+        if (!guildId) throw new Error("guild_id mancante");
+
+        const member = await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "GET");
+        const allRoles = await discordApiRequest(`/guilds/${guildId}/roles`, "GET");
+        
+        const managedRoleIds = allRoles.filter(r => r.managed).map(r => r.id);
+        const ignoredRoleIds = args.ignore_roles || [];
+        
+        // Conserva solo i ruoli gestiti (intoccabili) e i ruoli ignorati esplicitamente
+        const rolesToKeep = member.roles.filter(id => managedRoleIds.includes(id) || ignoredRoleIds.includes(id));
+        
+        await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { roles: rolesToKeep });
+
+        return { content: [{ type: "text", text: `Successo: rimossi tutti i ruoli all'utente ${args.user_id} tranne quelli ignorati (${ignoredRoleIds.join(", ")}).` }] };
       }
       
       case "search_image": {
