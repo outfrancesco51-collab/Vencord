@@ -19,22 +19,8 @@ foreach ($proc in $discordProcesses) {
 Start-Sleep -Milliseconds 800
 Write-Host "  -> Tutti i processi Discord sono stati arrestati." -ForegroundColor Green
 
-# 2. Sincronizzazione dei file compilati in AppData Roaming
-Write-Host "`n[2/4] Sincronizzazione build personalizzata in Roaming..." -ForegroundColor Yellow
-$localDist = Join-Path $PSScriptRoot "dist"
-$roamingVencordDist = Join-Path $env:APPDATA "Vencord\dist"
-
-if (-not (Test-Path $roamingVencordDist)) {
-    New-Item -ItemType Directory -Path $roamingVencordDist -Force | Out-Null
-}
-
-Get-ChildItem -Path $localDist -Exclude "Installer", "*.zip" | ForEach-Object {
-    Copy-Item -Path $_.FullName -Destination $roamingVencordDist -Recurse -Force
-}
-Write-Host "  -> File compilati sincronizzati in: $roamingVencordDist" -ForegroundColor Green
-
-# 3. Esecuzione Installer Ufficiale CLI
-Write-Host "`n[3/4] Applicazione della patch tramite VencordInstallerCli..." -ForegroundColor Yellow
+# 2. Esecuzione Installer Ufficiale CLI (Inietta hook in Discord)
+Write-Host "`n[2/4] Applicazione della patch tramite VencordInstallerCli..." -ForegroundColor Yellow
 $InstallerPath = Join-Path $PSScriptRoot "dist\Installer\VencordInstallerCli.exe"
 
 if (Test-Path $InstallerPath) {
@@ -55,6 +41,20 @@ if (Test-Path $InstallerPath) {
 } else {
     Write-Host "  -> VencordInstallerCli.exe non presente in dist\Installer, procedo con iniezione diretta." -ForegroundColor Yellow
 }
+
+# 3. Sincronizzazione build personalizzata in Roaming (Sovrascrive i file stock dell'installer)
+Write-Host "`n[3/4] Sincronizzazione build personalizzata avanzata in Roaming..." -ForegroundColor Yellow
+$localDist = Join-Path $PSScriptRoot "dist"
+$roamingVencordDist = Join-Path $env:APPDATA "Vencord\dist"
+
+if (-not (Test-Path $roamingVencordDist)) {
+    New-Item -ItemType Directory -Path $roamingVencordDist -Force | Out-Null
+}
+
+Get-ChildItem -Path $localDist -Exclude "Installer", "*.zip" | ForEach-Object {
+    Copy-Item -Path $_.FullName -Destination $roamingVencordDist -Recurse -Force
+}
+Write-Host "  -> Build personalizzata sincronizzata con SUCCESSO in: $roamingVencordDist" -ForegroundColor Green
 
 # 4. Iniezione diretta di sicurezza / Dual Loader Verification
 Write-Host "`n[4/4] Verifica e consolidamento patch del core di Discord..." -ForegroundColor Yellow

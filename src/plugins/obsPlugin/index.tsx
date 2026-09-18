@@ -257,8 +257,9 @@ function OBSControlPanel({ onClose }: { onClose: () => void; }) {
 
 export default definePlugin({
     name: "OBSPlugin",
-    description: "🎬 Controlla OBS Studio direttamente da Discord: cambia scene, avvia/ferma registrazione, stream, replay buffer — tutto integrato nel client Discord.",
-    tags: ["Media", "Utility", "Activity"],
+    description: "🎬 MCP OBS Studio Controller: controlla scene, registrazione, streaming, audio e replay buffer via WebSocket e MCP Server integrato.",
+    tags: ["Utility", "Media"],
+    searchTerms: ["mcp", "obs", "stream", "websocket", "ai", "model"],
     authors: [Devs.Antigravity],
     settings,
 

@@ -27,6 +27,7 @@ export default definePlugin({
     authors: [Devs.AI],
     description: "Advanced MCP: Antigravity/Codex, create images/HTML/CSS, manage Discord channels, internet connectivity, and SwissTransfer large ZIP uploads.",
     tags: ["Utility", "Developers"],
+    searchTerms: ["mcp", "ai", "model", "tools", "server"],
     settings,
     patches: [
         {
