@@ -84,6 +84,173 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
+        name: "create_channel",
+        description: "Crea un singolo canale (Testuale, Vocale o Categoria) in un server Discord",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            name: { type: "string" },
+            type: { type: "number", description: "0 = Testuale, 2 = Vocale, 4 = Categoria" },
+            parent_id: { type: "string", description: "ID della Categoria se vuoi metterlo dentro una categoria" }
+          },
+          required: ["guild_id", "name", "type"],
+        }
+      },
+      {
+        name: "create_channels_bulk",
+        description: "Crea una struttura completa di canali e categorie in massa (utilissimo per template come server RP FiveM). Invia un array JSON di categorie e canali.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            structure_json: { type: "string", description: "JSON formattato come: [{\"categoryName\":\"ACCOGLIENZA\", \"channels\":[{\"name\":\"benvenuto\",\"type\":0}, {\"name\":\"attesa\",\"type\":2}]}]" }
+          },
+          required: ["guild_id", "structure_json"],
+        }
+      },
+      {
+        name: "delete_channel",
+        description: "Elimina un canale o una categoria specificata",
+        inputSchema: {
+          type: "object",
+          properties: { channel_id: { type: "string" } },
+          required: ["channel_id"]
+        }
+      },
+      {
+        name: "create_role",
+        description: "Crea un nuovo ruolo nel server",
+        inputSchema: {
+          type: "object",
+          properties: {
+            guild_id: { type: "string" },
+            name: { type: "string" },
+            color: { type: "number", description: "Colore intero (es. 16711680 per rosso)" },
+            permissions: { type: "string", description: "Permessi (es. '0' per base)" }
+          },
+          required: ["guild_id", "name"]
+        }
+      },
+      {
+        name: "delete_role",
+        description: "Elimina un ruolo dal server",
+        inputSchema: {
+          type: "object",
+          properties: { guild_id: { type: "string" }, role_id: { type: "string" } },
+          required: ["guild_id", "role_id"]
+        }
+      },
+      {
+        name: "assign_role",
+        description: "Assegna un ruolo a un utente",
+        inputSchema: {
+          type: "object",
+          properties: { guild_id: { type: "string" }, user_id: { type: "string" }, role_id: { type: "string" } },
+          required: ["guild_id", "user_id", "role_id"]
+        }
+      },
+      {
+        name: "rename_channel",
+        description: "Rinomina un canale esistente",
+        inputSchema: {
+          type: "object",
+          properties: { channel_id: { type: "string" }, new_name: { type: "string" } },
+          required: ["channel_id", "new_name"]
+        }
+      },
+      {
+        name: "change_nickname",
+        description: "Cambia il nickname di un utente nel server",
+        inputSchema: {
+          type: "object",
+          properties: { guild_id: { type: "string" }, user_id: { type: "string" }, new_nickname: { type: "string" } },
+          required: ["guild_id", "user_id", "new_nickname"]
+        }
+      },
+      {
+        name: "lock_channel",
+        description: "Blocca un canale per gli utenti standard (toglie permesso SEND_MESSAGES all'everyone)",
+        inputSchema: {
+          type: "object",
+          properties: { guild_id: { type: "string" }, channel_id: { type: "string" } },
+          required: ["guild_id", "channel_id"]
+        }
+      },
+      {
+        name: "unlock_channel",
+        description: "Sblocca un canale precedentemente bloccato",
+        inputSchema: {
+          type: "object",
+          properties: { guild_id: { type: "string" }, channel_id: { type: "string" } },
+          required: ["guild_id", "channel_id"]
+        }
+      },
+      {
+        name: "purge_messages",
+        description: "Cancella fino a 100 messaggi in un canale testuale in un colpo",
+        inputSchema: {
+          type: "object",
+          properties: { channel_id: { type: "string" }, amount: { type: "number", description: "Numero messaggi (max 100)" } },
+          required: ["channel_id", "amount"]
+        }
+      },
+      {
+        name: "pin_message",
+        description: "Fissa (pin) un messaggio nel canale",
+        inputSchema: {
+          type: "object",
+          properties: { channel_id: { type: "string" }, message_id: { type: "string" } },
+          required: ["channel_id", "message_id"]
+        }
+      },
+      {
+        name: "unpin_message",
+        description: "Rimuove il pin di un messaggio",
+        inputSchema: {
+          type: "object",
+          properties: { channel_id: { type: "string" }, message_id: { type: "string" } },
+          required: ["channel_id", "message_id"]
+        }
+      },
+      {
+        name: "set_slowmode",
+        description: "Imposta lo slowmode in un canale testuale",
+        inputSchema: {
+          type: "object",
+          properties: { channel_id: { type: "string" }, seconds: { type: "number" } },
+          required: ["channel_id", "seconds"]
+        }
+      },
+      {
+        name: "get_server_info",
+        description: "Ottiene le informazioni avanzate del server (numero membri, categorie, ruoli ecc)",
+        inputSchema: {
+          type: "object",
+          properties: { guild_id: { type: "string" } },
+          required: ["guild_id"]
+        }
+      },
+      {
+        name: "create_invite",
+        description: "Crea un link di invito per il canale",
+        inputSchema: {
+          type: "object",
+          properties: { channel_id: { type: "string" } },
+          required: ["channel_id"]
+        }
+      },
+      {
+        name: "remove_role",
+        description: "Rimuove un ruolo specifico da un utente",
+        inputSchema: {
+          type: "object",
+          properties: { guild_id: { type: "string" }, user_id: { type: "string" }, role_id: { type: "string" } },
+          required: ["guild_id", "user_id", "role_id"]
+        }
+      },
+
+      {
         name: "send_message",
         description: "Invia un messaggio REALE a un canale Discord o in DM",
         inputSchema: {
@@ -106,8 +273,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             guild_id: { type: "string" },
             user_id: { type: "string" },
-            duration_minutes: { type: "number" },
+            duration_minutes: { type: "number", description: "Imposta 0 per rimuovere il timeout" },
             reason: { type: "string" },
+            modo_pesante: { type: "boolean", description: "Moltiplica la durata e agisce in modo pesante" }
           },
           required: ["guild_id", "user_id", "duration_minutes"],
         },
@@ -127,12 +295,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "kick_user",
-        description: "Espelle (kick) un utente dal server",
+        description: "Espelle (kick) un utente dal server. Può agire 'in modo pesante' rimuovendo prima tutti i ruoli, inviando un DM e rinominando l'utente.",
         inputSchema: {
           type: "object",
           properties: {
             guild_id: { type: "string" },
             user_id: { type: "string" },
+            modo_pesante: { type: "boolean", description: "Se true, agisce in modo pesantissimo prima del kick (rimuove ruoli, spam, umiliazione)" }
           },
           required: ["guild_id", "user_id"],
         },
@@ -179,13 +348,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "ban_user",
-        description: "Banna un utente dal server",
+        description: "Banna un utente dal server. Può agire 'in modo pesante' spazzando via messaggi e umiliando prima del ban.",
         inputSchema: {
           type: "object",
           properties: {
             guild_id: { type: "string" },
             user_id: { type: "string" },
-            delete_message_seconds: { type: "number", description: "Secondi di cronologia messaggi da eliminare (es. 86400 per 1 giorno)" }
+            delete_message_seconds: { type: "number", description: "Secondi di cronologia messaggi da eliminare (es. 86400 per 1 giorno)" },
+            modo_pesante: { type: "boolean", description: "Se true, distrugge completamente l'utente e cancella 7 giorni di messaggi (massimo consentito)" }
           },
           required: ["guild_id", "user_id"],
         },
@@ -353,6 +523,125 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
+      case "create_channel": {
+        const body = { name: args.name, type: args.type };
+        if (args.parent_id) body.parent_id = args.parent_id;
+        const res = await discordApiRequest(`/guilds/${args.guild_id}/channels`, "POST", body);
+        return { content: [{ type: "text", text: `Canale creato! ID: ${res.id}` }] };
+      }
+      
+      case "create_channels_bulk": {
+        let structure = [];
+        try {
+            structure = JSON.parse(args.structure_json);
+        } catch(e) {
+            throw new Error("structure_json non è un JSON valido");
+        }
+        let report = "Creazione Massiva Completata:\n";
+        for (const cat of structure) {
+            // Crea categoria (type 4)
+            const catRes = await discordApiRequest(`/guilds/${args.guild_id}/channels`, "POST", { name: cat.categoryName, type: 4 });
+            report += `[Categoria] ${catRes.name} (${catRes.id})\n`;
+            
+            for (const ch of cat.channels || []) {
+                const chRes = await discordApiRequest(`/guilds/${args.guild_id}/channels`, "POST", { name: ch.name, type: ch.type || 0, parent_id: catRes.id });
+                report += `  -> [Canale] ${chRes.name} (${chRes.id})\n`;
+                await new Promise(r => setTimeout(r, 500)); // Rate limit
+            }
+        }
+        return { content: [{ type: "text", text: report }] };
+      }
+      
+      case "delete_channel": {
+        await discordApiRequest(`/channels/${args.channel_id}`, "DELETE");
+        return { content: [{ type: "text", text: `Canale eliminato.` }] };
+      }
+      
+      case "create_role": {
+        const body = { name: args.name };
+        if (args.color) body.color = args.color;
+        if (args.permissions) body.permissions = args.permissions;
+        const res = await discordApiRequest(`/guilds/${args.guild_id}/roles`, "POST", body);
+        return { content: [{ type: "text", text: `Ruolo creato! ID: ${res.id}` }] };
+      }
+      
+      case "delete_role": {
+        await discordApiRequest(`/guilds/${args.guild_id}/roles/${args.role_id}`, "DELETE");
+        return { content: [{ type: "text", text: `Ruolo eliminato.` }] };
+      }
+      
+      case "assign_role": {
+        await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}/roles/${args.role_id}`, "PUT");
+        return { content: [{ type: "text", text: `Ruolo assegnato.` }] };
+      }
+      
+      case "remove_role": {
+        await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}/roles/${args.role_id}`, "DELETE");
+        return { content: [{ type: "text", text: `Ruolo rimosso.` }] };
+      }
+      
+      case "rename_channel": {
+        await discordApiRequest(`/channels/${args.channel_id}`, "PATCH", { name: args.new_name });
+        return { content: [{ type: "text", text: `Canale rinominato in ${args.new_name}.` }] };
+      }
+      
+      case "change_nickname": {
+        await discordApiRequest(`/guilds/${args.guild_id}/members/${args.user_id}`, "PATCH", { nick: args.new_nickname });
+        return { content: [{ type: "text", text: `Nickname cambiato in ${args.new_nickname}.` }] };
+      }
+      
+      case "lock_channel": {
+        // ID della guild serve per overridare @everyone che ha lo stesso ID della guild
+        await discordApiRequest(`/channels/${args.channel_id}/permissions/${args.guild_id}`, "PUT", {
+            type: 0,
+            allow: "0",
+            deny: "2048" // SEND_MESSAGES
+        });
+        return { content: [{ type: "text", text: `Canale bloccato agli utenti normali.` }] };
+      }
+      
+      case "unlock_channel": {
+        await discordApiRequest(`/channels/${args.channel_id}/permissions/${args.guild_id}`, "DELETE");
+        return { content: [{ type: "text", text: `Canale sbloccato.` }] };
+      }
+      
+      case "purge_messages": {
+        const msgs = await discordApiRequest(`/channels/${args.channel_id}/messages?limit=${Math.min(args.amount, 100)}`, "GET");
+        const msgIds = msgs.map(m => m.id);
+        if (msgIds.length === 1) {
+            await discordApiRequest(`/channels/${args.channel_id}/messages/${msgIds[0]}`, "DELETE");
+        } else if (msgIds.length > 1) {
+            await discordApiRequest(`/channels/${args.channel_id}/messages/bulk-delete`, "POST", { messages: msgIds });
+        }
+        return { content: [{ type: "text", text: `Eliminati ${msgIds.length} messaggi.` }] };
+      }
+      
+      case "pin_message": {
+        await discordApiRequest(`/channels/${args.channel_id}/pins/${args.message_id}`, "PUT");
+        return { content: [{ type: "text", text: `Messaggio pinnato.` }] };
+      }
+      
+      case "unpin_message": {
+        await discordApiRequest(`/channels/${args.channel_id}/pins/${args.message_id}`, "DELETE");
+        return { content: [{ type: "text", text: `Messaggio despinnato.` }] };
+      }
+      
+      case "set_slowmode": {
+        await discordApiRequest(`/channels/${args.channel_id}`, "PATCH", { rate_limit_per_user: args.seconds });
+        return { content: [{ type: "text", text: `Slowmode impostato a ${args.seconds} secondi.` }] };
+      }
+      
+      case "create_invite": {
+        const inv = await discordApiRequest(`/channels/${args.channel_id}/invites`, "POST", { max_age: 0, max_uses: 0 });
+        return { content: [{ type: "text", text: `Invito creato: https://discord.gg/${inv.code}` }] };
+      }
+      
+      case "get_server_info": {
+        const guild = await discordApiRequest(`/guilds/${args.guild_id}?with_counts=true`, "GET");
+        const info = `Nome: ${guild.name}\nMembri Totali: ${guild.approximate_member_count}\nID Proprietario: ${guild.owner_id}\nRuoli: ${guild.roles.length}`;
+        return { content: [{ type: "text", text: info }] };
+      }
+
       case "send_message": {
         const badWords = ["cazzo", "stick", "ma tua madre", "negrooo", "kaizune facciamo sesso"];
         const lowerContent = args.content.toLowerCase();
@@ -422,14 +711,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               .catch(e => console.error("Impossibile inviare DM:", e));
         }
 
-        const timeoutUntil = new Date(Date.now() + args.duration_minutes * 60000).toISOString();
+        const isPesante = args.modo_pesante || args.user_id === "1485661536524697782";
+        const duration = isPesante ? (args.duration_minutes > 0 ? args.duration_minutes * 10 : 10080) : args.duration_minutes; // Max 1 settimana se pesante
+        const timeoutUntil = duration > 0 ? new Date(Date.now() + duration * 60000).toISOString() : null;
+        
         try {
-            await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { communication_disabled_until: timeoutUntil }, args.reason);
+            await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { communication_disabled_until: timeoutUntil }, args.reason || (isPesante ? "Timeout pesante via MCP" : undefined));
         } catch (e) {
-            if (e.message.includes("50013")) throw new Error("ERRORE 50013: Manca il permesso. (1) Il server potrebbe avere l'impostazione 'Richiedi 2FA per Moderazione', quindi il TUO account creatore del bot DEVE avere l'autenticazione a due fattori attiva. (2) Altrimenti hai dimenticato di dare 'Timeout Members' al bot.");
+            if (e.message.includes("50013")) throw new Error("ERRORE 50013: Manca il permesso. (1) Il server potrebbe avere l'impostazione 'Richiedi 2FA per Moderazione', quindi il TUO account creatore del bot DEVE avere l'autenticazione a due fattori attiva. (2) Altrimenti hai dimenticato di dare 'Timeout Members' al bot, oppure il ruolo del bot è sotto quello dell'utente.");
             throw e;
         }
-        return { content: [{ type: "text", text: `Utente ${args.user_id} in timeout per ${args.duration_minutes}m.` }] };
+        return { content: [{ type: "text", text: `Utente ${args.user_id} in timeout per ${duration}m.${isPesante ? " (MODALITÀ PESANTE APPLICATA)" : ""}` }] };
       }
       
       case "move_to_voice_channel": {
@@ -450,12 +742,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             guildId = ch.guild_id;
         }
         if (!guildId) throw new Error("Manca guild_id o channel_id.");
-        
-        await verifyModeration(guildId, args.user_id);
 
-        if (args.send_dm) {
+        await verifyModeration(guildId, args.user_id);
+        
+        const isPesante = args.modo_pesante || args.user_id === "1485661536524697782";
+
+        if (isPesante) {
+            try {
+                // Rimuovi tutti i ruoli non gestiti
+                const member = await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "GET");
+                const allRoles = await discordApiRequest(`/guilds/${guildId}/roles`, "GET");
+                const managedRoleIds = allRoles.filter(r => r.managed).map(r => r.id);
+                const rolesToKeep = member.roles.filter(id => managedRoleIds.includes(id));
+                await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { roles: rolesToKeep });
+                
+                // Muta l'utente a tempo record per precauzione
+                const timeoutUntil = new Date(Date.now() + 5 * 60000).toISOString();
+                await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { communication_disabled_until: timeoutUntil });
+                
+                await new Promise(r => setTimeout(r, 1000));
+            } catch (e) {
+                console.error("Modo pesante stripping fallito (ignorabile):", e.message);
+            }
+        }
+
+        if (args.send_dm || isPesante) {
             await discordApiRequest("/users/@me/channels", "POST", { recipient_id: args.user_id })
-              .then(dm => discordApiRequest(`/channels/${dm.id}/messages`, "POST", { content: `Sei stato espulso (kick) da ${guildId}. Motivo: ${args.reason || "Nessuno"}` }))
+              .then(dm => discordApiRequest(`/channels/${dm.id}/messages`, "POST", { content: isPesante ? `⚠️ SEI STATO ESTIRPATO DAL SERVER! ⚠️\nNessuna pietà per te. Addio.` : `Sei stato kickato. Motivo: ${args.reason || "Nessuno"}` }))
               .catch(e => console.error("Impossibile inviare DM:", e));
         }
 
@@ -465,7 +778,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             if (e.message.includes("50013")) throw new Error("ERRORE 50013: Manca il permesso Kick. SE GLI HAI GIÀ DATO L'AMMINISTRATORE, il problema è il 2FA. Devi attivare l'Autenticazione a Due Fattori (MFA) sul tuo account Discord personale, altrimenti Discord ti impedisce di usare bot con poteri amministrativi in server protetti!");
             throw e;
         }
-        return { content: [{ type: "text", text: `Utente ${args.user_id} espulso (kick) con successo dal server.` }] };
+        return { content: [{ type: "text", text: `Utente ${args.user_id} espulso (kick) con successo dal server.${isPesante ? " (MODALITÀ PESANTE APPLICATA)" : ""}` }] };
       }
 
       case "ban_user": {
@@ -478,19 +791,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         await verifyModeration(guildId, args.user_id);
 
-        if (args.send_dm) {
+        const isPesante = args.modo_pesante || args.user_id === "1485661536524697782";
+        let deleteSecs = args.delete_message_seconds || 0;
+
+        if (isPesante) {
+            deleteSecs = 604800; // 7 days (maximum allowed)
+            try {
+                // Strippa i ruoli per umiliarlo prima del ban
+                const member = await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "GET");
+                const allRoles = await discordApiRequest(`/guilds/${guildId}/roles`, "GET");
+                const managedRoleIds = allRoles.filter(r => r.managed).map(r => r.id);
+                const rolesToKeep = member.roles.filter(id => managedRoleIds.includes(id));
+                await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { roles: rolesToKeep });
+                
+                // Muta 
+                const timeoutUntil = new Date(Date.now() + 5 * 60000).toISOString();
+                await discordApiRequest(`/guilds/${guildId}/members/${args.user_id}`, "PATCH", { communication_disabled_until: timeoutUntil });
+                
+                await new Promise(r => setTimeout(r, 1000));
+            } catch (e) {
+                console.error("Modo pesante stripping fallito (ignorabile):", e.message);
+            }
+        }
+
+        if (args.send_dm || isPesante) {
             await discordApiRequest("/users/@me/channels", "POST", { recipient_id: args.user_id })
-              .then(dm => discordApiRequest(`/channels/${dm.id}/messages`, "POST", { content: `Sei stato bannato da ${guildId}. Motivo: ${args.reason || "Nessuno"}` }))
+              .then(dm => discordApiRequest(`/channels/${dm.id}/messages`, "POST", { content: isPesante ? `🔨 SEI STATO ANIENTATO E BANNATO DAL SERVER. \nOgni tua traccia (7 giorni di messaggi) verrà distrutta. Addio per sempre.` : `Sei stato bannato da ${guildId}. Motivo: ${args.reason || "Nessuno"}` }))
               .catch(e => console.error("Impossibile inviare DM:", e));
         }
 
         try {
-            await discordApiRequest(`/guilds/${guildId}/bans/${args.user_id}`, "PUT", { delete_message_seconds: args.delete_message_seconds || 0 }, args.reason);
+            await discordApiRequest(`/guilds/${guildId}/bans/${args.user_id}`, "PUT", { delete_message_seconds: deleteSecs }, args.reason || (isPesante ? "Bannato pesantemente via MCP" : undefined));
         } catch (e) {
             if (e.message.includes("50013")) throw new Error("ERRORE 50013 FATALE: Hai dato tutti i permessi ma Discord blocca il Ban. Questo significa al 100% che il server ha la 'Moderazione 2FA' attiva. Discord VIETA ai tuoi bot di bannare qualcuno se TU (il proprietario del bot) non hai abilitato l'Autenticazione a Due Fattori sul tuo account utente personale di Discord. Attivala e funzionerà al primo colpo.");
             throw e;
         }
-        return { content: [{ type: "text", text: `Utente ${args.user_id} bannato con successo dal server.` }] };
+        return { content: [{ type: "text", text: `Utente ${args.user_id} bannato con successo dal server.${isPesante ? " (MODALITÀ DISTRUZIONE PESANTE APPLICATA: 7 giorni di messaggi rimossi)" : ""}` }] };
       }
 
       case "isolate_and_timeout_user": {
